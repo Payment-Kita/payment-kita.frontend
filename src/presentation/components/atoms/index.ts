@@ -4,6 +4,7 @@ export * from './ChainIcon';
 export * from './ChainLabel';
 export * from './Input';
 export * from './Modal';
+export * from './Select';
 export * from './TokenIcon';
 export * from './Label';
 export * from './PaymentKitaLogo';

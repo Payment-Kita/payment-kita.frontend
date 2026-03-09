@@ -334,6 +334,9 @@ export interface Dictionary {
     privacy_loading: string;
     privacy_forwarded_final: string;
     privacy_forward_failed_retrying: string;
+    privacy_claimable: string;
+    privacy_refundable: string;
+    privacy_resolved: string;
     privacy_settled_to_stealth: string;
     privacy_pending_on_source: string;
     privacy_reason_label: string;
