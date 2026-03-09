@@ -12,7 +12,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'Pay-Chain | Cross-Chain Stablecoin Payments',
+  title: 'Payment-Kita | Cross-Chain Stablecoin Payments',
   description: 'The fastest way to send and receive cross-chain stablecoin payments. Built for the future of decentralized finance.',
   keywords: ['crypto', 'payments', 'stablecoin', 'cross-chain', 'defi', 'solana', 'ethereum'],
   icons: {
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     apple: '/favicon.png',
   },
   openGraph: {
-    title: 'Pay-Chain | Cross-Chain Stablecoin Payments',
+    title: 'Payment-Kita | Cross-Chain Stablecoin Payments',
     description: 'The fastest way to send and receive cross-chain stablecoin payments.',
     type: 'website',
   },

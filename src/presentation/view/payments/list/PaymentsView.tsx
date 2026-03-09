@@ -8,7 +8,19 @@ import { useTranslation } from '@/presentation/hooks';
 import { Plus, ChevronLeft, ChevronRight, CreditCard } from 'lucide-react';
 
 export function PaymentsView() {
-  const { payments, isLoading, pagination, page, setPage } = usePayments();
+  const {
+    payments,
+    allPaymentsCount,
+    filteredPaymentsCount,
+    isLoading,
+    privacyStatusByPaymentId,
+    privacyStatusLoading,
+    filter,
+    setFilter,
+    pagination,
+    page,
+    setPage,
+  } = usePayments();
   const { t } = useTranslation();
 
   return (
@@ -31,6 +43,32 @@ export function PaymentsView() {
           </Button>
         </Link>
       </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant={filter === 'all' ? 'primary' : 'secondary'}
+          size="sm"
+          onClick={() => setFilter('all')}
+        >
+          {t('payments.filters.all')}
+        </Button>
+        <Button
+          variant={filter === 'privacy_only' ? 'primary' : 'secondary'}
+          size="sm"
+          onClick={() => setFilter('privacy_only')}
+        >
+          {t('payments.filters.privacy_only')}
+        </Button>
+        <Button
+          variant={filter === 'privacy_retrying' ? 'warning' : 'secondary'}
+          size="sm"
+          onClick={() => setFilter('privacy_retrying')}
+        >
+          {t('payments.filters.privacy_retrying')}
+        </Button>
+        <span className="text-xs text-muted ml-1">
+          {filteredPaymentsCount}/{allPaymentsCount}
+        </span>
+      </div>
 
       {/* Transaction List */}
       <div className="card overflow-hidden">
@@ -41,7 +79,13 @@ export function PaymentsView() {
           </div>
         ) : (
           <>
-            <TransactionList payments={payments} showAll={true} title="" />
+            <TransactionList
+              payments={payments}
+              privacyStatusByPaymentId={privacyStatusByPaymentId}
+              privacyStatusLoading={privacyStatusLoading}
+              showAll={true}
+              title=""
+            />
             
             {/* Pagination */}
             {pagination && pagination.totalPages > 1 && (

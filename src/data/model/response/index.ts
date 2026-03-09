@@ -1,4 +1,16 @@
-import type { User, Payment, PaymentEvent, Chain, Token, SupportedToken, Wallet, PaymentRequest, ApiKey } from '../entity';
+import type {
+  User,
+  Payment,
+  PaymentEvent,
+  Chain,
+  Token,
+  SupportedToken,
+  Wallet,
+  PaymentRequest,
+  ApiKey,
+  PaymentPrivacyStatus,
+  PaymentPrivacyRecoveryTx,
+} from '../entity';
 
 // Auth responses
 export interface AuthResponse {
@@ -63,6 +75,14 @@ export interface PaymentsResponse {
 
 export interface PaymentEventsResponse {
   events: PaymentEvent[];
+}
+
+export interface PaymentPrivacyStatusResponse {
+  privacyStatus: PaymentPrivacyStatus;
+}
+
+export interface PaymentPrivacyRecoveryTxResponse {
+  txData: PaymentPrivacyRecoveryTx;
 }
 
 // Chain & Token responses

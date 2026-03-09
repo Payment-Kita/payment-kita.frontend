@@ -101,6 +101,11 @@ export interface Dictionary {
     connect_wallet_continue_notice: string;
     connect_wallet_notice: string;
     confirm: string;
+    filters: {
+      all: string;
+      privacy_only: string;
+      privacy_retrying: string;
+    };
     status: {
       pending: string;
       completed: string;
@@ -180,6 +185,11 @@ export interface Dictionary {
     bridge_quote_ok: string;
     bridge_quote_failed: string;
     bridge_quote_reason: string;
+    bridge_quote_reason_schema_mismatch: string;
+    bridge_quote_reason_route_not_configured: string;
+    bridge_quote_reason_insufficient_native_fee: string;
+    fee_behavior_hint: string;
+    native_excess_refund_hint: string;
   };
   auth: {
     login: string;
@@ -321,6 +331,14 @@ export interface Dictionary {
     default_title: string;
     empty_title: string;
     empty_description: string;
+    privacy_loading: string;
+    privacy_forwarded_final: string;
+    privacy_forward_failed_retrying: string;
+    privacy_settled_to_stealth: string;
+    privacy_pending_on_source: string;
+    privacy_reason_label: string;
+    privacy_signals_label: string;
+    privacy_stage_label: string;
   };
   session_modal: {
     title: string;
@@ -509,7 +527,6 @@ export interface Dictionary {
     feeConfigs: string;
     onchainAdapters: string;
     routePolicies: string;
-    layerzeroConfigs: string;
     crosschainConfigs: string;
     merchants_view: {
       loading: string;
@@ -929,6 +946,8 @@ export interface Dictionary {
       preflight_recommend_configure_route: string;
       preflight_recommend_verify_fee_quote: string;
       preflight_recommend_ready: string;
+      preflight_quote_pipeline_hint: string;
+      preflight_quote_schema_mismatch: string;
       select_source_chain: string;
       select_destination_chain: string;
       manual_adapter_contract: string;
@@ -1003,11 +1022,17 @@ export interface Dictionary {
       issue_count: string;
       no_issues: string;
       issues: string;
+      recommended_action_label: string;
+      issue_action_label: string;
       success_status: string;
       error_status: string;
       unknown_status: string;
       yes: string;
       no: string;
+      layerzero_e2e_title: string;
+      layerzero_e2e_empty: string;
+      layerzero_e2e_fix_now: string;
+      layerzero_e2e_reconfigure: string;
       toasts: {
         recheck_success: string;
         recheck_failed: string;
@@ -1073,43 +1098,6 @@ export interface Dictionary {
         default_bridge_type: string;
         fallback_mode: string;
         fallback_order: string;
-      };
-    };
-    layerzero_configs_view: {
-      title: string;
-      subtitle: string;
-      add_config: string;
-      loading: string;
-      source_chain: string;
-      destination_chain: string;
-      all_source_chains: string;
-      all_destination_chains: string;
-      select_source_chain: string;
-      select_destination_chain: string;
-      active_only: string;
-      filter_all: string;
-      filter_active: string;
-      filter_inactive: string;
-      dst_eid: string;
-      peer_hex: string;
-      options_hex: string;
-      is_active: string;
-      active: string;
-      inactive: string;
-      yes: string;
-      no: string;
-      create_title: string;
-      update_title: string;
-      modal_desc: string;
-      delete_title: string;
-      delete_desc: string;
-      labels: {
-        source: string;
-        destination: string;
-        dst_eid: string;
-        peer_hex: string;
-        options_hex: string;
-        is_active: string;
       };
     };
     contracts_view: {

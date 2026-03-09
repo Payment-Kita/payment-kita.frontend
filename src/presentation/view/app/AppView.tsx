@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from './useApp';
 import { ChainTokenSelector } from '@/presentation/components/organisms/ChainTokenSelector';
 import { Button, Input, Label } from '@/presentation/components/atoms';
 import { AmountTokenInput, WalletConnectButton } from '@/presentation/components/molecules';
-import { AlertTriangle, ArrowDownUp, CheckCircle2, Send, Wallet } from 'lucide-react';
+import { AlertTriangle, ArrowDownUp, CheckCircle2, HandCoins, Loader2, RotateCcw, Send, Undo2, Wallet } from 'lucide-react';
 import { useTranslation } from '@/presentation/hooks';
 import { cn } from '@/core/utils/cn';
 
@@ -17,6 +17,16 @@ export default function AppView() {
     destChainId,
     sourceTokenAddress,
     receiver, setReceiver,
+    paymentMode,
+    setPaymentMode,
+    bridgeOptionSelection,
+    setBridgeOptionSelection,
+    bridgeTokenSource,
+    setBridgeTokenSource,
+    minBridgeAmountOut,
+    setMinBridgeAmountOut,
+    minDestAmountOut,
+    setMinDestAmountOut,
     selectedSourceChainTokenId,
     selectedDestChainTokenId,
     chainTokenItems,
@@ -33,13 +43,100 @@ export default function AppView() {
     isOwnAddress, setIsOwnAddress,
     isLoading, isSuccess, error, routeErrorDiagnostics, txHash,
     paymentCostPreview,
+    activePaymentId,
+    privacyStatus,
+    privacyStatusLoading,
+    privacyStatusError,
+    privacyActionLoading,
+    privacyActionError,
+    handlePrivacyAction,
     handlePay,
     handleReversePair
   } = useApp();
 
   const selectedSourceChain = chains.find((chain) => chain.id === sourceChainId);
+  const normalizedBridgeQuoteReason = useMemo(() => {
+    const reason = String(paymentCostPreview?.bridgeQuoteReason || '').trim().toLowerCase();
+    if (!reason) return '';
+    if (
+      reason.includes('quote_failed_schema_mismatch') ||
+      reason.includes('selector was not recognized') ||
+      reason.includes("there's no fallback function") ||
+      reason.includes('no method with id')
+    ) {
+      return t('app_view.bridge_quote_reason_schema_mismatch');
+    }
+    if (reason.includes('route not configured')) return t('app_view.bridge_quote_reason_route_not_configured');
+    if (reason.includes('insufficient native fee')) return t('app_view.bridge_quote_reason_insufficient_native_fee');
+    return paymentCostPreview?.bridgeQuoteReason || '';
+  }, [paymentCostPreview?.bridgeQuoteReason, t]);
   const [tempTxList, setTempTxList] = useState<Array<{ hash: string; chainName?: string; createdAt: string }>>([]);
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const lastCapturedTxRef = useRef<string | null>(null);
+  const privacyStage = String(privacyStatus?.stage || '').toLowerCase();
+  const privacyStepIndex = useMemo(() => {
+    if (privacyStage === 'privacy_forwarded_final' || privacyStage === 'privacy_resolved') return 2;
+    if (privacyStage === 'privacy_settled_to_stealth' || privacyStage === 'privacy_forward_failed_retrying') return 1;
+    if (privacyStage === 'privacy_claimable' || privacyStage === 'privacy_refundable') return 1;
+    if (privacyStage === 'privacy_pending_on_source') return 0;
+    return -1;
+  }, [privacyStage]);
+  const privacyStageLabel = useMemo(() => {
+    switch (privacyStage) {
+      case 'privacy_pending_on_source':
+        return 'Pending on source';
+      case 'privacy_settled_to_stealth':
+        return 'Settled to stealth';
+      case 'privacy_forwarded_final':
+        return 'Forwarded to final receiver';
+      case 'privacy_forward_failed_retrying':
+        return 'Forward failed (retrying)';
+      case 'privacy_claimable':
+        return 'Claim available';
+      case 'privacy_refundable':
+        return 'Refund available';
+      case 'privacy_resolved':
+        return 'Resolved';
+      case 'not_privacy':
+        return 'Not privacy route';
+      default:
+        return 'Waiting privacy status';
+    }
+  }, [privacyStage]);
+  const privacyStageClass = useMemo(() => {
+    if (privacyStage === 'privacy_forwarded_final' || privacyStage === 'privacy_resolved') return 'bg-accent-green/10 text-accent-green border-accent-green/20';
+    if (privacyStage === 'privacy_forward_failed_retrying') return 'bg-red-500/10 text-red-400 border-red-500/20';
+    if (privacyStage === 'privacy_claimable') return 'bg-blue-500/10 text-blue-300 border-blue-400/20';
+    if (privacyStage === 'privacy_refundable') return 'bg-amber-500/10 text-amber-300 border-amber-400/20';
+    if (privacyStage === 'privacy_settled_to_stealth') return 'bg-blue-500/10 text-blue-300 border-blue-400/20';
+    if (privacyStage === 'privacy_pending_on_source') return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+    return 'bg-surface/60 text-muted border-white/10';
+  }, [privacyStage]);
+  const privacyActions = useMemo(() => {
+    const actions: Array<{ key: 'retry' | 'claim' | 'refund'; label: string; icon: React.ReactNode }> = [];
+    if (['privacy_forward_failed_retrying', 'privacy_claimable', 'privacy_refundable'].includes(privacyStage)) {
+      actions.push({
+        key: 'retry',
+        label: 'Retry',
+        icon: <RotateCcw className="h-3.5 w-3.5" />,
+      });
+    }
+    if (['privacy_settled_to_stealth', 'privacy_claimable', 'privacy_forward_failed_retrying'].includes(privacyStage)) {
+      actions.push({
+        key: 'claim',
+        label: 'Claim',
+        icon: <HandCoins className="h-3.5 w-3.5" />,
+      });
+    }
+    if (['privacy_refundable', 'privacy_forward_failed_retrying'].includes(privacyStage)) {
+      actions.push({
+        key: 'refund',
+        label: 'Refund',
+        icon: <Undo2 className="h-3.5 w-3.5" />,
+      });
+    }
+    return actions;
+  }, [privacyStage]);
 
   const getExplorerUrl = (hash: string) => {
     const explorer = selectedSourceChain?.explorerUrl;
@@ -189,13 +286,193 @@ export default function AppView() {
             </div>
             {!!paymentCostPreview.bridgeQuoteReason && (
               <p className="text-xs text-muted break-all">
-                {t('app_view.bridge_quote_reason')}: {paymentCostPreview.bridgeQuoteReason}
+                {t('app_view.bridge_quote_reason')}: {normalizedBridgeQuoteReason}
+              </p>
+            )}
+            <div className="pt-2 border-t border-white/10 space-y-1">
+              <p className="text-xs text-amber-200/90">{t('app_view.fee_behavior_hint')}</p>
+              <p className="text-xs text-amber-200/90">{t('app_view.native_excess_refund_hint')}</p>
+            </div>
+          </div>
+        )}
+        {(paymentMode === 'privacy' || !!activePaymentId) && (
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs uppercase tracking-wide text-foreground/70">Privacy Route Status</p>
+              <span className={`inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border ${privacyStageClass}`}>
+                {privacyStatusLoading ? 'Checking...' : privacyStageLabel}
+              </span>
+            </div>
+            <p className="text-xs text-muted">
+              Swap route check only validates swap availability. Privacy execution status is tracked separately below.
+            </p>
+            {activePaymentId && (
+              <p className="text-xs text-muted break-all">
+                paymentId: <span className="text-foreground">{activePaymentId}</span>
+              </p>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <p className="text-muted">
+                Swap Route:{' '}
+                <span className={paymentCostPreview?.bridgeQuoteOk === true ? 'text-emerald-300' : paymentCostPreview?.bridgeQuoteOk === false ? 'text-amber-300' : 'text-foreground'}>
+                  {paymentCostPreview?.bridgeQuoteOk === true ? 'Ready' : paymentCostPreview?.bridgeQuoteOk === false ? 'Blocked' : 'Unknown'}
+                </span>
+              </p>
+              <p className="text-muted">
+                Privacy Candidate:{' '}
+                <span className={privacyStatus?.isPrivacyCandidate ? 'text-emerald-300' : 'text-foreground'}>
+                  {privacyStatus?.isPrivacyCandidate ? 'Yes' : 'Not confirmed yet'}
+                </span>
+              </p>
+            </div>
+            <div className="space-y-2">
+              {[
+                { key: 'privacy_pending_on_source', label: '1. Pending on source gateway' },
+                { key: 'privacy_settled_to_stealth', label: '2. Settled to stealth receiver' },
+                { key: 'privacy_forwarded_final', label: '3. Forwarded to final receiver' },
+              ].map((step, index) => {
+                const isDone = privacyStepIndex >= index;
+                const isCurrent = privacyStage === step.key;
+                return (
+                  <div
+                    key={step.key}
+                    className={`text-xs rounded-lg border px-3 py-2 ${
+                      isDone
+                        ? 'border-accent-green/20 bg-accent-green/10 text-accent-green'
+                        : 'border-white/10 bg-black/20 text-muted'
+                    }`}
+                  >
+                    <span className={isCurrent ? 'font-semibold' : ''}>{step.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+            {privacyActions.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
+                {privacyActions.map((action) => (
+                  <Button
+                    key={action.key}
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={privacyActionLoading}
+                    onClick={() => void handlePrivacyAction(action.key)}
+                  >
+                    {privacyActionLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : action.icon}
+                    {action.label}
+                  </Button>
+                ))}
+              </div>
+            )}
+            {privacyStatus?.reason && (
+              <p className="text-xs text-amber-200/90 break-all">
+                reason: {privacyStatus.reason}
+              </p>
+            )}
+            {privacyStatus?.signals && privacyStatus.signals.length > 0 && (
+              <p className="text-xs text-muted break-all">
+                signals: {privacyStatus.signals.join(', ')}
+              </p>
+            )}
+            {privacyStatusError && (
+              <p className="text-xs text-red-300 break-all">
+                status error: {privacyStatusError}
+              </p>
+            )}
+            {privacyActionError && (
+              <p className="text-xs text-red-300 break-all">
+                action error: {privacyActionError}
               </p>
             )}
           </div>
         )}
 
         <div className="space-y-2">
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs uppercase tracking-wide text-foreground/70">Advanced Settings</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAdvancedSettings((prev) => !prev)}
+              >
+                {showAdvancedSettings ? 'Hide' : 'Show'}
+              </Button>
+            </div>
+            <p className="text-[11px] text-muted">
+              Optional override for route and mode tuning. Normal flow does not require this.
+            </p>
+          </div>
+          {showAdvancedSettings && (
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
+            <p className="text-xs uppercase tracking-wide text-foreground/70">Manual Configuration</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs text-foreground/80">Mode</Label>
+                <select
+                  className="w-full h-10 rounded-lg border border-white/10 bg-black/20 px-3 text-sm text-foreground"
+                  value={paymentMode}
+                  onChange={(e) => setPaymentMode(e.target.value as 'regular' | 'privacy')}
+                >
+                  <option value="regular">Regular</option>
+                  <option value="privacy">Privacy</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-foreground/80">Bridge Option</Label>
+                <select
+                  className="w-full h-10 rounded-lg border border-white/10 bg-black/20 px-3 text-sm text-foreground"
+                  value={bridgeOptionSelection}
+                  onChange={(e) => setBridgeOptionSelection(e.target.value as 'default' | '0' | '1' | '2')}
+                >
+                  <option value="default">Default (null → SC default)</option>
+                  <option value="0">Hyperbridge</option>
+                  <option value="1">CCIP</option>
+                  <option value="2">LayerZero</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-foreground/80">Bridge Token Source (optional)</Label>
+                <Input
+                  placeholder="0x..."
+                  value={bridgeTokenSource}
+                  onChange={(e) => setBridgeTokenSource(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-foreground/80">Min Bridge Amount Out (optional)</Label>
+                <Input
+                  placeholder="e.g. 1.25"
+                  value={minBridgeAmountOut}
+                  onChange={(e) => setMinBridgeAmountOut(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="text-xs text-foreground/80">Min Dest Amount Out (optional)</Label>
+                <Input
+                  placeholder="e.g. 1.25"
+                  value={minDestAmountOut}
+                  onChange={(e) => setMinDestAmountOut(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="pt-1 space-y-1">
+              <p className="text-[11px] text-muted">
+                Min-out values are entered as normal token amounts (for example `1.25`), not raw wei units.
+              </p>
+              <p className="text-[11px] text-muted">
+                The app converts them to smallest-unit values automatically using token decimals before sending the transaction request.
+              </p>
+            </div>
+            {paymentMode === 'privacy' && (
+              <p className="text-[11px] text-muted">
+                Privacy intent and stealth receiver are generated automatically by backend.
+              </p>
+            )}
+          </div>
+          )}
+
           <div className="flex items-center justify-between px-1">
             <Label className="text-sm font-medium text-foreground/80">{t('app_view.receiver_address')}</Label>
             <div className="flex bg-white/5 border border-white/10 rounded-lg p-1">

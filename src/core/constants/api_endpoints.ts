@@ -12,6 +12,10 @@ export const API_ENDPOINTS = {
   PAYMENTS: '/v1/payments',
   PAYMENT_BY_ID: (id: string) => `/v1/payments/${id}`,
   PAYMENT_EVENTS: (id: string) => `/v1/payments/${id}/events`,
+  PAYMENT_PRIVACY_STATUS: (id: string) => `/v1/payments/${id}/privacy-status`,
+  PAYMENT_PRIVACY_RETRY: (id: string) => `/v1/payments/${id}/privacy/retry`,
+  PAYMENT_PRIVACY_CLAIM: (id: string) => `/v1/payments/${id}/privacy/claim`,
+  PAYMENT_PRIVACY_REFUND: (id: string) => `/v1/payments/${id}/privacy/refund`,
 
   // Payment Requests
   PAYMENT_REQUESTS: '/v1/payment-requests',
@@ -52,6 +56,8 @@ export const API_ENDPOINTS = {
   ADMIN_ONCHAIN_ADAPTER_HYPERBRIDGE_CONFIG: '/v1/admin/onchain-adapters/hyperbridge-config',
   ADMIN_ONCHAIN_ADAPTER_CCIP_CONFIG: '/v1/admin/onchain-adapters/ccip-config',
   ADMIN_ONCHAIN_ADAPTER_LAYERZERO_CONFIG: '/v1/admin/onchain-adapters/layerzero-config',
+  ADMIN_ONCHAIN_ADAPTER_LAYERZERO_CONFIGURE_E2E: '/v1/admin/onchain-adapters/layerzero-configure-e2e',
+  ADMIN_ONCHAIN_ADAPTER_LAYERZERO_E2E_STATUS: '/v1/admin/onchain-adapters/layerzero-e2e-status',
   ADMIN_CONTRACTS_CONFIG_CHECK: '/v1/admin/contracts/config-check',
   ADMIN_CONTRACT_INTERACT: '/v1/admin/contracts/interact',
   ADMIN_CONTRACT_BY_ID_CONFIG_CHECK: (id: string) => `/v1/admin/contracts/${id}/config-check`,
@@ -63,8 +69,6 @@ export const API_ENDPOINTS = {
   ADMIN_CROSSCHAIN_CONFIG_AUTO_FIX_BULK: '/v1/admin/crosschain-config/auto-fix-bulk',
   ADMIN_ROUTE_POLICIES: '/v1/admin/route-policies',
   ADMIN_ROUTE_POLICY_BY_ID: (id: string) => `/v1/admin/route-policies/${id}`,
-  ADMIN_LAYERZERO_CONFIGS: '/v1/admin/layerzero-configs',
-  ADMIN_LAYERZERO_CONFIG_BY_ID: (id: string) => `/v1/admin/layerzero-configs/${id}`,
   ADMIN_DIAGNOSTICS_ROUTE_ERROR: (paymentId: string) => `/v1/admin/diagnostics/route-error/${paymentId}`,
 
   // Chains

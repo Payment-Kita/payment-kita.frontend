@@ -43,7 +43,7 @@ export const useAdminTokens = () => {
   const [pairCheckChainId, setPairCheckChainId] = useState('');
   const [tokenInId, setTokenInId] = useState('');
   const [tokenOutId, setTokenOutId] = useState('');
-  const [pairCheckResult, setPairCheckResult] = useState<{ exists: boolean; isDirect: boolean; path: string[] } | null>(null);
+  const [pairCheckResult, setPairCheckResult] = useState<{ exists: boolean; isDirect: boolean; path: string[]; executable?: boolean; reasons?: string[]; swapRouterV3?: string; universalRouter?: string } | null>(null);
 
   // Registration state
   const [directFee, setDirectFee] = useState<number>(3000);

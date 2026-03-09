@@ -88,7 +88,7 @@ export const useAdminOnchainAdapters = () => {
         setCCIPConfigMutation.mutateAsync({
           sourceChainId,
           destChainId,
-          chainSelector: ccipChainSelector ? Number(ccipChainSelector) : undefined,
+          chainSelector: String(ccipChainSelector || '').trim() || undefined,
           destinationAdapterHex,
         }),
     },

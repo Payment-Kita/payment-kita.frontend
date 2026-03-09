@@ -1,6 +1,6 @@
 # Frontend Development Rules
 
-> **Project:** pay-chain.frontend  
+> **Project:** payment-kita.frontend  
 > **Architecture:** Clean Architecture + MVVM  
 > **Framework:** Next.js 16+ (App Router)
 

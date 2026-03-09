@@ -79,4 +79,15 @@ export interface CreatePaymentAppRequest {
   amount: string;
   decimals: number;
   receiverAddress: string;
+  mode?: 'regular' | 'privacy';
+  bridgeOption?: number | null;
+  bridgeTokenSource?: string | null;
+  minBridgeAmountOut?: string | null;
+  minDestAmountOut?: string | null;
+  privacyIntentId?: string | null;
+  privacyStealthReceiver?: string | null;
+}
+
+export interface PaymentPrivacyRecoveryRequest {
+  onchainPaymentId?: string;
 }

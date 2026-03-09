@@ -84,7 +84,7 @@ export const AdminContractDetailView = ({ id }: Props) => {
         await setCCIPConfigMutation.mutateAsync({
           sourceChainId,
           destChainId: functionInputValues.chainId || functionInputValues.destChainId || '',
-          chainSelector: functionInputValues.selector ? Number(functionInputValues.selector) : undefined,
+          chainSelector: String(functionInputValues.selector || '').trim() || undefined,
           destinationAdapterHex: functionInputValues.adapter || '',
         });
         toast.success(t('admin.contracts_view.detail.action_success'));

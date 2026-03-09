@@ -13,10 +13,10 @@ if (!projectId) {
 
 // Create the modal
 const metadata = {
-  name: 'Pay-Chain',
+  name: 'Payment-Kita',
   description: 'Cross-chain Stablecoin Payment Gateway',
-  url: 'https://pay-chain.com',
-  icons: ['https://pay-chain.com/logo.png'],
+  url: 'https://payment-kita.com',
+  icons: ['https://payment-kita.com/logo.png'],
 };
 
 if (projectId) {

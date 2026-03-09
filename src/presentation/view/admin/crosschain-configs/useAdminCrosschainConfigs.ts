@@ -8,8 +8,10 @@ import {
   useAdminPaymentBridges,
   useAutoFixCrosschainRoute,
   useAutoFixCrosschainRoutesBulk,
+  useConfigureLayerZeroE2E,
   useCrosschainConfigPreflight,
   useCrosschainConfigOverview,
+  useLayerZeroE2EStatus,
   useRegisterOnchainAdapter,
   useOnchainAdapterStatus,
   useRecheckCrosschainRoute,
@@ -62,12 +64,85 @@ const resolveLayerZeroDstEid = (chain: any): string => {
 
   const caip2 = String(chain?.caip2 || '').trim().toLowerCase();
   const networkId = String(chain?.networkId || '').trim();
-  const fallbackByCAIP2: Record<string, string> = {};
-  const fallbackByNetworkId: Record<string, string> = {};
+  const fallbackByCAIP2: Record<string, string> = {
+    'eip155:8453': '30184', // Base
+    'eip155:137': '30109', // Polygon
+    'eip155:42161': '30110', // Arbitrum
+    'eip155:56': '30102', // BSC
+  };
+  const fallbackByNetworkId: Record<string, string> = {
+    '8453': '30184',
+    '137': '30109',
+    '42161': '30110',
+    '56': '30102',
+  };
   if (caip2 && fallbackByCAIP2[caip2]) return fallbackByCAIP2[caip2];
   if (networkId && fallbackByNetworkId[networkId]) return fallbackByNetworkId[networkId];
 
   return '';
+};
+
+const resolveLayerZeroSrcEid = (chain: any): string => {
+  const candidates = [
+    chain?.layerZeroEid,
+    chain?.layerZeroSrcEid,
+    chain?.layerzeroSrcEid,
+    chain?.lzSrcEid,
+    chain?.srcEid,
+    chain?.metadata?.layerZeroEid,
+    chain?.metadata?.layerZeroSrcEid,
+    chain?.metadata?.layerzeroSrcEid,
+    chain?.metadata?.lzSrcEid,
+    chain?.metadata?.srcEid,
+  ];
+  for (const candidate of candidates) {
+    const raw = String(candidate ?? '').trim();
+    if (/^[0-9]+$/.test(raw)) return raw;
+  }
+  const caip2 = String(chain?.caip2 || '').trim().toLowerCase();
+  const networkId = String(chain?.networkId || '').trim();
+  const fallbackByCAIP2: Record<string, string> = {
+    'eip155:8453': '30184', // Base
+    'eip155:137': '30109', // Polygon
+    'eip155:42161': '30110', // Arbitrum
+    'eip155:56': '30102', // BSC
+  };
+  const fallbackByNetworkId: Record<string, string> = {
+    '8453': '30184',
+    '137': '30109',
+    '42161': '30110',
+    '56': '30102',
+  };
+  if (caip2 && fallbackByCAIP2[caip2]) return fallbackByCAIP2[caip2];
+  if (networkId && fallbackByNetworkId[networkId]) return fallbackByNetworkId[networkId];
+  return '';
+};
+
+const bytes32ToAddress = (value: string): string => {
+  const hex = String(value || '').trim().toLowerCase();
+  if (!/^0x[0-9a-f]{64}$/.test(hex)) return '';
+  const addr = `0x${hex.slice(26)}`;
+  if (!/^0x[0-9a-f]{40}$/.test(addr)) return '';
+  if (addr === '0x0000000000000000000000000000000000000000') return '';
+  return addr;
+};
+
+const resolveLzEidFromChainRef = (value: string): number | undefined => {
+  const raw = String(value || '').trim().toLowerCase();
+  if (!raw) return undefined;
+  const normalized =
+    raw.startsWith('eip155:')
+      ? raw
+      : /^[0-9]+$/.test(raw)
+        ? `eip155:${raw}`
+        : raw;
+  const map: Record<string, number> = {
+    'eip155:8453': 30184, // Base
+    'eip155:137': 30109, // Polygon
+    'eip155:42161': 30110, // Arbitrum
+    'eip155:56': 30102, // BSC
+  };
+  return map[normalized];
 };
 
 const deriveEvmStateMachineHex = (value: string, chainType?: string): string => {
@@ -106,8 +181,20 @@ const resolveCCIPChainSelector = (chain: any): string => {
 
   const caip2 = String(chain?.caip2 || '').trim().toLowerCase();
   const networkId = String(chain?.networkId || '').trim();
-  const fallbackByCAIP2: Record<string, string> = {};
-  const fallbackByNetworkId: Record<string, string> = {};
+  // Fallback map for environments where chain metadata has not been populated yet.
+  // Keep these aligned with RotateCCIPAdapters.s.sol constants.
+  const fallbackByCAIP2: Record<string, string> = {
+    'eip155:8453': '15971525489660198786', // Base
+    'eip155:137': '4051577828743386545', // Polygon
+    'eip155:42161': '4949039107694359620', // Arbitrum
+    'eip155:56': '11344663589394136015', // BSC
+  };
+  const fallbackByNetworkId: Record<string, string> = {
+    '8453': '15971525489660198786',
+    '137': '4051577828743386545',
+    '42161': '4949039107694359620',
+    '56': '11344663589394136015',
+  };
   if (caip2 && fallbackByCAIP2[caip2]) return fallbackByCAIP2[caip2];
   if (networkId && fallbackByNetworkId[networkId]) return fallbackByNetworkId[networkId];
 
@@ -128,7 +215,16 @@ export const useAdminCrosschainConfigs = () => {
   const [manualDestinationContractHex, setManualDestinationContractHex] = useState('');
   const [manualCCIPChainSelector, setManualCCIPChainSelector] = useState('');
   const [manualCCIPDestinationAdapterHex, setManualCCIPDestinationAdapterHex] = useState('');
+  const [manualCCIPDestinationGasLimit, setManualCCIPDestinationGasLimit] = useState('');
+  const [manualCCIPDestinationExtraArgsHex, setManualCCIPDestinationExtraArgsHex] = useState('');
+  const [manualCCIPDestinationFeeTokenAddress, setManualCCIPDestinationFeeTokenAddress] = useState('');
+  const [manualCCIPSourceChainSelector, setManualCCIPSourceChainSelector] = useState('');
+  const [manualCCIPTrustedSenderHex, setManualCCIPTrustedSenderHex] = useState('');
+  const [manualCCIPAllowSourceChain, setManualCCIPAllowSourceChain] = useState(true);
   const [manualLayerZeroDstEid, setManualLayerZeroDstEid] = useState('');
+  const [manualLayerZeroSrcEid, setManualLayerZeroSrcEid] = useState('');
+  const [manualLayerZeroSenderAddress, setManualLayerZeroSenderAddress] = useState('');
+  const [manualLayerZeroReceiverAddress, setManualLayerZeroReceiverAddress] = useState('');
   const [manualLayerZeroPeerHex, setManualLayerZeroPeerHex] = useState('');
   const [manualLayerZeroOptionsHex, setManualLayerZeroOptionsHex] = useState('');
   const [policyDefaultBridgeType, setPolicyDefaultBridgeType] = useState<string>('0');
@@ -186,6 +282,7 @@ export const useAdminCrosschainConfigs = () => {
   const setHyperbridgeConfigMutation = useSetHyperbridgeConfig();
   const setCCIPConfigMutation = useSetCCIPConfig();
   const setLayerZeroConfigMutation = useSetLayerZeroConfig();
+  const configureLayerZeroE2EMutation = useConfigureLayerZeroE2E();
   const routePoliciesQuery = useRoutePolicies({
     page: 1,
     limit: 1,
@@ -197,6 +294,10 @@ export const useAdminCrosschainConfigs = () => {
   const manualOnchainStatusQuery = useOnchainAdapterStatus(
     manualSourceChainId || undefined,
     manualDestChainId || undefined
+  );
+  const selectedOnchainStatusQuery = useOnchainAdapterStatus(
+    sourceChainId || undefined,
+    destChainId || undefined
   );
 
   const normalizeBridgeType = (raw: any): string => {
@@ -280,6 +381,7 @@ export const useAdminCrosschainConfigs = () => {
   const destLayerZeroContractsQuery = useAdminContracts(1, 200, manualDestChainId || undefined, 'ADAPTER_LAYERZERO');
   const selectedSourceHyperContractsQuery = useAdminContracts(1, 200, sourceChainId || undefined, 'ADAPTER_HYPERBRIDGE');
   const selectedSourceCCIPContractsQuery = useAdminContracts(1, 200, sourceChainId || undefined, 'ADAPTER_CCIP');
+  const selectedSourceLayerZeroContractsQuery = useAdminContracts(1, 200, sourceChainId || undefined, 'ADAPTER_LAYERZERO');
   const selectedDestHyperContractsQuery = useAdminContracts(1, 200, destChainId || undefined, 'ADAPTER_HYPERBRIDGE');
   const selectedDestCCIPContractsQuery = useAdminContracts(1, 200, destChainId || undefined, 'ADAPTER_CCIP');
   const selectedDestLayerZeroContractsQuery = useAdminContracts(1, 200, destChainId || undefined, 'ADAPTER_LAYERZERO');
@@ -289,11 +391,33 @@ export const useAdminCrosschainConfigs = () => {
   const manualDestLayerZeroContracts = destLayerZeroContractsQuery.data?.items || [];
   const selectedSourceHyperContracts = selectedSourceHyperContractsQuery.data?.items || [];
   const selectedSourceCCIPContracts = selectedSourceCCIPContractsQuery.data?.items || [];
+  const selectedSourceLayerZeroContracts = selectedSourceLayerZeroContractsQuery.data?.items || [];
   const selectedDestHyperContracts = selectedDestHyperContractsQuery.data?.items || [];
   const selectedDestCCIPContracts = selectedDestCCIPContractsQuery.data?.items || [];
   const selectedDestLayerZeroContracts = selectedDestLayerZeroContractsQuery.data?.items || [];
 
+  const statusSourceSenderAddress = String(
+    selectedOnchainStatusQuery.data?.adapterType2 ||
+    selectedSourceLayerZeroContracts?.[0]?.contractAddress ||
+    manualLayerZeroSenderAddress ||
+    ''
+  ).trim();
+  const statusDestinationReceiverAddress = String(
+    selectedDestLayerZeroContracts?.[0]?.contractAddress ||
+    manualLayerZeroReceiverAddress ||
+    bytes32ToAddress(String(selectedOnchainStatusQuery.data?.layerZeroPeer || '')) ||
+    ''
+  ).trim();
+
   const chains = useMemo(() => chainQuery.data?.items || [], [chainQuery.data?.items]);
+  const selectedSourceChain = useMemo(
+    () => chains.find((chain: any) => String(chain.id) === String(sourceChainId)),
+    [chains, sourceChainId]
+  );
+  const selectedDestChain = useMemo(
+    () => chains.find((chain: any) => String(chain.id) === String(destChainId)),
+    [chains, destChainId]
+  );
   const chainLookup = useMemo(() => {
     const map = new Map<string, any>();
     for (const chain of chains) {
@@ -330,6 +454,20 @@ export const useAdminCrosschainConfigs = () => {
     () => destinationChains.find((chain: any) => String(chain.id) === String(manualDestChainId)),
     [destinationChains, manualDestChainId]
   );
+  const selectedManualSourceChain = useMemo(
+    () => sourceChains.find((chain: any) => String(chain.id) === String(manualSourceChainId)),
+    [sourceChains, manualSourceChainId]
+  );
+  const layerZeroE2EStatusQuery = useLayerZeroE2EStatus(
+    {
+      sourceChainId: sourceChainId || undefined,
+      destChainId: destChainId || undefined,
+      destinationReceiverAddress: statusDestinationReceiverAddress,
+      destinationSrcEid: Number(resolveLayerZeroSrcEid(selectedSourceChain || {})) || undefined,
+      destinationSrcSenderHex: addressToPaddedBytesHex(statusSourceSenderAddress),
+    },
+    Boolean(sourceChainId && destChainId)
+  );
 
   const isPending =
     recheckMutation.isPending ||
@@ -341,6 +479,7 @@ export const useAdminCrosschainConfigs = () => {
     setHyperbridgeConfigMutation.isPending ||
     setCCIPConfigMutation.isPending ||
     setLayerZeroConfigMutation.isPending ||
+    configureLayerZeroE2EMutation.isPending ||
     createRoutePolicyMutation.isPending ||
     updateRoutePolicyMutation.isPending;
   const routes = useMemo(() => {
@@ -432,14 +571,33 @@ export const useAdminCrosschainConfigs = () => {
       return;
     }
 
-    const statusSelector = Number(manualOnchainStatusQuery.data?.ccipChainSelector || 0);
-    if (Number.isFinite(statusSelector) && statusSelector > 0) {
-      setManualCCIPChainSelector(String(statusSelector));
+    // Do not derive uint64 selector from status numeric field, because JSON->JS Number
+    // can lose precision for large uint64 values (e.g. CCIP chain selectors).
+    setManualCCIPChainSelector(resolveCCIPChainSelector(selectedManualDestChain));
+  }, [manualBridgeType, manualDestChainId, selectedManualDestChain]);
+
+  useEffect(() => {
+    if (manualBridgeType !== '1') return;
+    if (!manualSourceChainId) {
+      setManualCCIPSourceChainSelector('');
       return;
     }
+    setManualCCIPSourceChainSelector(resolveCCIPChainSelector(selectedManualSourceChain || {}));
+  }, [manualBridgeType, manualSourceChainId, selectedManualSourceChain]);
 
-    setManualCCIPChainSelector(resolveCCIPChainSelector(selectedManualDestChain));
-  }, [manualBridgeType, manualDestChainId, selectedManualDestChain, manualOnchainStatusQuery.data?.ccipChainSelector]);
+  useEffect(() => {
+    if (manualBridgeType !== '1') return;
+    const senderAddress = String(manualAdapterAddress || manualSourceAdapterContracts?.[0]?.contractAddress || '').trim();
+    if (!senderAddress) {
+      setManualCCIPTrustedSenderHex('');
+      return;
+    }
+    const senderHex = addressToPaddedBytesHex(senderAddress);
+    if (!senderHex) return;
+    if (String(manualCCIPTrustedSenderHex || '').toLowerCase() !== senderHex.toLowerCase()) {
+      setManualCCIPTrustedSenderHex(senderHex);
+    }
+  }, [manualBridgeType, manualAdapterAddress, manualSourceAdapterContracts, manualCCIPTrustedSenderHex]);
 
   useEffect(() => {
     if (manualBridgeType !== '2') return;
@@ -454,6 +612,41 @@ export const useAdminCrosschainConfigs = () => {
     }
     setManualLayerZeroDstEid(resolveLayerZeroDstEid(selectedManualDestChain));
   }, [manualBridgeType, manualDestChainId, selectedManualDestChain, manualOnchainStatusQuery.data?.layerZeroDstEid]);
+
+  useEffect(() => {
+    if (manualBridgeType !== '2') return;
+    if (!manualSourceChainId) {
+      setManualLayerZeroSrcEid('');
+      return;
+    }
+    setManualLayerZeroSrcEid(resolveLayerZeroSrcEid(selectedManualSourceChain || {}));
+  }, [manualBridgeType, manualSourceChainId, selectedManualSourceChain]);
+
+  useEffect(() => {
+    if (manualBridgeType !== '2') return;
+    if (!manualSourceChainId) {
+      setManualLayerZeroSenderAddress('');
+      return;
+    }
+    const sender = String(manualAdapterAddress || manualSourceAdapterContracts?.[0]?.contractAddress || '').trim();
+    if (!sender) return;
+    if (String(manualLayerZeroSenderAddress || '').toLowerCase() !== sender.toLowerCase()) {
+      setManualLayerZeroSenderAddress(sender);
+    }
+  }, [manualBridgeType, manualSourceChainId, manualAdapterAddress, manualSourceAdapterContracts, manualLayerZeroSenderAddress]);
+
+  useEffect(() => {
+    if (manualBridgeType !== '2') return;
+    if (!manualDestChainId) {
+      setManualLayerZeroReceiverAddress('');
+      return;
+    }
+    const receiver = String(manualDestLayerZeroContracts?.[0]?.contractAddress || '').trim();
+    if (!receiver) return;
+    if (String(manualLayerZeroReceiverAddress || '').toLowerCase() !== receiver.toLowerCase()) {
+      setManualLayerZeroReceiverAddress(receiver);
+    }
+  }, [manualBridgeType, manualDestChainId, manualDestLayerZeroContracts, manualLayerZeroReceiverAddress]);
 
   useEffect(() => {
     if (!manualSourceChainId) {
@@ -507,6 +700,9 @@ export const useAdminCrosschainConfigs = () => {
     if (manualBridgeType !== '1') return;
     if (!manualDestChainId) {
       setManualCCIPDestinationAdapterHex('');
+      setManualCCIPDestinationGasLimit('');
+      setManualCCIPDestinationExtraArgsHex('');
+      setManualCCIPDestinationFeeTokenAddress('');
       return;
     }
     if (!manualDestCCIPContracts.length) {
@@ -523,12 +719,31 @@ export const useAdminCrosschainConfigs = () => {
     const onchainDestHex = String(manualOnchainStatusQuery.data?.ccipDestinationAdapter || '').trim();
     if (onchainDestHex) {
       setManualCCIPDestinationAdapterHex(onchainDestHex);
-      return;
-    }
-    if (!allValues.includes(String(manualCCIPDestinationAdapterHex))) {
+    } else if (!allValues.includes(String(manualCCIPDestinationAdapterHex))) {
       setManualCCIPDestinationAdapterHex(allValues[0]);
     }
-  }, [manualBridgeType, manualDestChainId, manualDestCCIPContracts, manualOnchainStatusQuery.data?.ccipDestinationAdapter]);
+    const statusGasLimit = String(manualOnchainStatusQuery.data?.ccipDestinationGasLimit || '').trim();
+    if (statusGasLimit) {
+      setManualCCIPDestinationGasLimit(statusGasLimit);
+    }
+    const statusExtraArgs = String(manualOnchainStatusQuery.data?.ccipDestinationExtraArgsHex || '').trim();
+    if (statusExtraArgs) {
+      setManualCCIPDestinationExtraArgsHex(statusExtraArgs);
+    }
+    const statusFeeToken = String(manualOnchainStatusQuery.data?.ccipDestinationFeeTokenAddress || '').trim();
+    if (statusFeeToken && /^0x[0-9a-fA-F]{40}$/.test(statusFeeToken)) {
+      setManualCCIPDestinationFeeTokenAddress(statusFeeToken);
+    }
+  }, [
+    manualBridgeType,
+    manualDestChainId,
+    manualDestCCIPContracts,
+    manualOnchainStatusQuery.data?.ccipDestinationAdapter,
+    manualOnchainStatusQuery.data?.ccipDestinationGasLimit,
+    manualOnchainStatusQuery.data?.ccipDestinationExtraArgsHex,
+    manualOnchainStatusQuery.data?.ccipDestinationFeeTokenAddress,
+    manualCCIPDestinationAdapterHex,
+  ]);
 
   useEffect(() => {
     if (manualBridgeType !== '2') return;
@@ -550,14 +765,45 @@ export const useAdminCrosschainConfigs = () => {
     const onchainPeer = String(manualOnchainStatusQuery.data?.layerZeroPeer || '').trim();
     if (onchainPeer) {
       setManualLayerZeroPeerHex(onchainPeer);
-      const onchainOptions = String(manualOnchainStatusQuery.data?.layerZeroOptionsHex || '').trim();
-      if (onchainOptions) setManualLayerZeroOptionsHex(onchainOptions);
+      return;
+    }
+    const receiverPeer = addressToPaddedBytesHex(String(manualLayerZeroReceiverAddress || ''));
+    if (receiverPeer && allValues.includes(receiverPeer)) {
+      if (String(manualLayerZeroPeerHex || '').toLowerCase() !== receiverPeer.toLowerCase()) {
+        setManualLayerZeroPeerHex(receiverPeer);
+      }
       return;
     }
     if (!allValues.includes(String(manualLayerZeroPeerHex))) {
       setManualLayerZeroPeerHex(allValues[0]);
     }
-  }, [manualBridgeType, manualDestChainId, manualDestLayerZeroContracts, manualOnchainStatusQuery.data?.layerZeroPeer, manualOnchainStatusQuery.data?.layerZeroOptionsHex]);
+  }, [
+    manualBridgeType,
+    manualDestChainId,
+    manualDestLayerZeroContracts,
+    manualOnchainStatusQuery.data?.layerZeroPeer,
+    manualLayerZeroPeerHex,
+    manualLayerZeroReceiverAddress,
+  ]);
+
+  useEffect(() => {
+    if (manualBridgeType !== '2') return;
+    if (!manualDestChainId) {
+      setManualLayerZeroOptionsHex('');
+      return;
+    }
+
+    const onchainOptions = String(manualOnchainStatusQuery.data?.layerZeroOptionsHex || '').trim();
+    if (onchainOptions) {
+      setManualLayerZeroOptionsHex(onchainOptions);
+      return;
+    }
+
+    // Keep a deterministic default for manual flow even if on-chain value not set yet.
+    if (!String(manualLayerZeroOptionsHex || '').trim()) {
+      setManualLayerZeroOptionsHex('0x');
+    }
+  }, [manualBridgeType, manualDestChainId, manualOnchainStatusQuery.data?.layerZeroOptionsHex, manualLayerZeroOptionsHex]);
 
   const handleRecheck = async (payload: { sourceChainId: string; destChainId: string }) => {
     try {
@@ -598,7 +844,16 @@ export const useAdminCrosschainConfigs = () => {
     setManualDestinationContractHex('');
     setManualCCIPChainSelector('');
     setManualCCIPDestinationAdapterHex('');
+    setManualCCIPDestinationGasLimit('');
+    setManualCCIPDestinationExtraArgsHex('');
+    setManualCCIPDestinationFeeTokenAddress('');
+    setManualCCIPSourceChainSelector('');
+    setManualCCIPTrustedSenderHex('');
+    setManualCCIPAllowSourceChain(true);
     setManualLayerZeroDstEid('');
+    setManualLayerZeroSrcEid('');
+    setManualLayerZeroSenderAddress('');
+    setManualLayerZeroReceiverAddress('');
     setManualLayerZeroPeerHex('');
     setManualLayerZeroOptionsHex('');
     resetManualStepper();
@@ -697,7 +952,16 @@ export const useAdminCrosschainConfigs = () => {
       setManualDestinationContractHex('');
       setManualCCIPChainSelector('');
       setManualCCIPDestinationAdapterHex('');
+      setManualCCIPDestinationGasLimit('');
+      setManualCCIPDestinationExtraArgsHex('');
+      setManualCCIPDestinationFeeTokenAddress('');
+      setManualCCIPSourceChainSelector('');
+      setManualCCIPTrustedSenderHex('');
+      setManualCCIPAllowSourceChain(true);
       setManualLayerZeroDstEid('');
+      setManualLayerZeroSrcEid('');
+      setManualLayerZeroSenderAddress('');
+      setManualLayerZeroReceiverAddress('');
       setManualLayerZeroPeerHex('');
       setManualLayerZeroOptionsHex('');
     }
@@ -705,6 +969,9 @@ export const useAdminCrosschainConfigs = () => {
     const firstSourceAddress = String(sourceContracts?.[0]?.contractAddress || '');
     if (firstSourceAddress) {
       setManualAdapterAddress(firstSourceAddress);
+      if (normalizedBridgeType === '2') {
+        setManualLayerZeroSenderAddress(firstSourceAddress);
+      }
     }
     if (normalizedBridgeType === '0') {
       const firstDestinationAddress = String(destContracts?.[0]?.contractAddress || '');
@@ -712,6 +979,7 @@ export const useAdminCrosschainConfigs = () => {
         setManualDestinationContractHex(addressToPaddedBytesHex(firstDestinationAddress));
       }
     } else if (normalizedBridgeType === '1') {
+      const firstSourceAddress = String(sourceContracts?.[0]?.contractAddress || '');
       const firstDestinationAddress = String(destContracts?.[0]?.contractAddress || '');
       if (firstDestinationAddress) {
         setManualCCIPDestinationAdapterHex(addressToPaddedBytesHex(firstDestinationAddress));
@@ -721,15 +989,29 @@ export const useAdminCrosschainConfigs = () => {
         const chainSelector = resolveCCIPChainSelector(selectedDestChain);
         if (chainSelector) setManualCCIPChainSelector(chainSelector);
       }
+      if (!manualCCIPSourceChainSelector) {
+        const selectedSourceChain = chains.find((item: any) => String(item?.id || '') === String(selectedSource));
+        const sourceSelector = resolveCCIPChainSelector(selectedSourceChain);
+        if (sourceSelector) setManualCCIPSourceChainSelector(sourceSelector);
+      }
+      if (firstSourceAddress && !manualCCIPTrustedSenderHex) {
+        setManualCCIPTrustedSenderHex(addressToPaddedBytesHex(firstSourceAddress));
+      }
     } else if (normalizedBridgeType === '2') {
       const firstDestinationAddress = String(destContracts?.[0]?.contractAddress || '');
       if (firstDestinationAddress) {
+        setManualLayerZeroReceiverAddress(firstDestinationAddress);
         setManualLayerZeroPeerHex(addressToPaddedBytesHex(firstDestinationAddress));
       }
       if (!manualLayerZeroDstEid) {
         const selectedDestChain = chains.find((item: any) => String(item?.id || '') === String(selectedDest));
         const dstEid = resolveLayerZeroDstEid(selectedDestChain);
         if (dstEid) setManualLayerZeroDstEid(dstEid);
+      }
+      if (!manualLayerZeroSrcEid) {
+        const selectedSourceChain = chains.find((item: any) => String(item?.id || '') === String(selectedSource));
+        const srcEid = resolveLayerZeroSrcEid(selectedSourceChain);
+        if (srcEid) setManualLayerZeroSrcEid(srcEid);
       }
     }
 
@@ -807,7 +1089,7 @@ export const useAdminCrosschainConfigs = () => {
           const destinationAdapterHex = destinationAddress ? addressToPaddedBytesHex(destinationAddress) : '';
           const selectedDestChain = chains.find((item: any) => String(item?.id || '') === String(selectedDest));
           const chainSelectorRaw = resolveCCIPChainSelector(selectedDestChain);
-          const chainSelector = chainSelectorRaw ? Number(chainSelectorRaw) : undefined;
+          const chainSelector = String(chainSelectorRaw || '').trim() || undefined;
           if (!chainSelector && !destinationAdapterHex) {
             toast.error(t('admin.crosschain_configs_view.toasts.preflight_missing_route_payload'));
             return;
@@ -820,21 +1102,40 @@ export const useAdminCrosschainConfigs = () => {
           });
           toast.success(t('admin.crosschain_configs_view.toasts.manual_ccip_success'));
         } else if (normalizedBridgeType === '2') {
+          const senderAddress = String(sourceContracts?.[0]?.contractAddress || '');
           const destinationAddress = String(destContracts?.[0]?.contractAddress || '');
           const peerHex = destinationAddress ? addressToPaddedBytesHex(destinationAddress) : '';
           const selectedDestChain = chains.find((item: any) => String(item?.id || '') === String(selectedDest));
+          const selectedSourceChain = chains.find((item: any) => String(item?.id || '') === String(selectedSource));
           const dstEidRaw = resolveLayerZeroDstEid(selectedDestChain);
+          const srcEidRaw = resolveLayerZeroSrcEid(selectedSourceChain);
           const dstEid = dstEidRaw ? Number(dstEidRaw) : undefined;
-          if (!dstEid || !peerHex) {
+          const srcEid = srcEidRaw ? Number(srcEidRaw) : undefined;
+          const srcSenderHex = senderAddress ? addressToPaddedBytesHex(senderAddress) : '';
+          if (!dstEid || !peerHex || !senderAddress || !destinationAddress || !srcEid || !srcSenderHex) {
             toast.error(t('admin.crosschain_configs_view.toasts.preflight_missing_route_payload'));
             return;
           }
-          await setLayerZeroConfigMutation.mutateAsync({
+          await configureLayerZeroE2EMutation.mutateAsync({
             sourceChainId: selectedSource,
             destChainId: selectedDest,
-            dstEid,
-            peerHex,
-            optionsHex: undefined,
+            source: {
+              registerAdapterIfMissing: false,
+              setDefaultBridgeType: false,
+              senderAddress,
+              dstEid,
+              dstPeerHex: peerHex,
+              optionsHex: '',
+              registerDelegate: false,
+              authorizeVaultSpender: false,
+            },
+            destination: {
+              receiverAddress: destinationAddress,
+              srcEid,
+              srcSenderHex,
+              authorizeVaultSpender: false,
+              authorizeGatewayAdapter: false,
+            },
           });
           toast.success(t('admin.crosschain_configs_view.toasts.manual_layerzero_success'));
         } else {
@@ -1024,8 +1325,11 @@ export const useAdminCrosschainConfigs = () => {
       const result = await setCCIPConfigMutation.mutateAsync({
         sourceChainId: manualSourceChainId,
         destChainId: manualDestChainId,
-        chainSelector: manualCCIPChainSelector ? Number(manualCCIPChainSelector) : undefined,
+        chainSelector: String(manualCCIPChainSelector || '').trim() || undefined,
         destinationAdapterHex: manualCCIPDestinationAdapterHex || undefined,
+        destinationGasLimit: manualCCIPDestinationGasLimit ? Number(manualCCIPDestinationGasLimit) : undefined,
+        destinationExtraArgsHex: manualCCIPDestinationExtraArgsHex || undefined,
+        destinationFeeTokenAddress: manualCCIPDestinationFeeTokenAddress || undefined,
       });
       toast.success(t('admin.crosschain_configs_view.toasts.manual_ccip_success'));
       setManualStepCompleted((prev) => ({ ...prev, step3: true }));
@@ -1054,17 +1358,53 @@ export const useAdminCrosschainConfigs = () => {
       toast.error(t('admin.crosschain_configs_view.toasts.manual_step_invalid'));
       return;
     }
-    if (!manualSourceChainId || !manualDestChainId || (!manualLayerZeroDstEid && !manualLayerZeroPeerHex && !manualLayerZeroOptionsHex)) {
+    if (!manualSourceChainId || !manualDestChainId) {
       toast.error(t('admin.crosschain_configs_view.toasts.manual_required_fields'));
       return;
     }
     try {
-      const result = await setLayerZeroConfigMutation.mutateAsync({
+      const senderAddress = String(
+        manualLayerZeroSenderAddress || manualAdapterAddress || manualSourceAdapterContracts?.[0]?.contractAddress || ''
+      );
+      const receiverAddress = String(
+        manualLayerZeroReceiverAddress || manualDestLayerZeroContracts?.[0]?.contractAddress || ''
+      );
+      const dstEid = Number(manualLayerZeroDstEid || resolveLayerZeroDstEid(selectedManualDestChain || {})) || undefined;
+      const srcEid = Number(manualLayerZeroSrcEid || resolveLayerZeroSrcEid(selectedManualSourceChain || {})) || undefined;
+      const dstPeerHex = manualLayerZeroPeerHex || (receiverAddress ? addressToPaddedBytesHex(receiverAddress) : '');
+      const srcSenderHex = senderAddress ? addressToPaddedBytesHex(senderAddress) : '';
+      const missing: string[] = [];
+      if (!senderAddress) missing.push('senderAddress');
+      if (!receiverAddress) missing.push('receiverAddress');
+      if (!dstEid) missing.push('dstEid');
+      if (!srcEid) missing.push('srcEid');
+      if (!dstPeerHex) missing.push('dstPeerHex');
+      if (!srcSenderHex) missing.push('srcSenderHex');
+      if (missing.length > 0) {
+        toast.error(`${t('admin.crosschain_configs_view.toasts.preflight_missing_route_payload')} (${missing.join(', ')})`);
+        return;
+      }
+
+      const result = await configureLayerZeroE2EMutation.mutateAsync({
         sourceChainId: manualSourceChainId,
         destChainId: manualDestChainId,
-        dstEid: manualLayerZeroDstEid ? Number(manualLayerZeroDstEid) : undefined,
-        peerHex: manualLayerZeroPeerHex || undefined,
-        optionsHex: manualLayerZeroOptionsHex || undefined,
+        source: {
+          registerAdapterIfMissing: false,
+          setDefaultBridgeType: false,
+          senderAddress,
+          dstEid,
+          dstPeerHex,
+          optionsHex: manualLayerZeroOptionsHex || '',
+          registerDelegate: false,
+          authorizeVaultSpender: true,
+        },
+        destination: {
+          receiverAddress,
+          srcEid,
+          srcSenderHex,
+          authorizeVaultSpender: true,
+          authorizeGatewayAdapter: true,
+        },
       });
       toast.success(t('admin.crosschain_configs_view.toasts.manual_layerzero_success'));
       setManualStepCompleted((prev) => ({ ...prev, step3: true }));
@@ -1079,11 +1419,86 @@ export const useAdminCrosschainConfigs = () => {
       setManualCurrentStep(4);
       await overviewQuery.refetch();
       await preflightQuery.refetch();
+      await layerZeroE2EStatusQuery.refetch();
     } catch (error: any) {
       setManualExecution((prev) => ({
         ...prev,
         step3: { status: 'FAILED', message: error?.message || t('admin.crosschain_configs_view.toasts.manual_layerzero_failed'), txHashes: [] },
       }));
+      toast.error(error?.message || t('admin.crosschain_configs_view.toasts.manual_layerzero_failed'));
+    }
+  };
+
+  const handleConfigureLayerZeroE2ESelected = async () => {
+    if (!sourceChainId || !destChainId) {
+      toast.error(t('admin.crosschain_configs_view.toasts.select_source_chain_first'));
+      return;
+    }
+
+    const senderAddress = String(
+      selectedOnchainStatusQuery.data?.adapterType2 ||
+      selectedSourceLayerZeroContracts?.[0]?.contractAddress ||
+      ''
+    );
+    const receiverAddress = String(
+      selectedDestLayerZeroContracts?.[0]?.contractAddress ||
+      manualDestLayerZeroContracts?.[0]?.contractAddress ||
+      bytes32ToAddress(String(selectedOnchainStatusQuery.data?.layerZeroPeer || '')) ||
+      ''
+    );
+    const dstEid =
+      Number(selectedOnchainStatusQuery.data?.layerZeroDstEid || 0) ||
+      Number(resolveLayerZeroDstEid(selectedDestChain || {})) ||
+      resolveLzEidFromChainRef(String(selectedOnchainStatusQuery.data?.destChainId || '')) ||
+      undefined;
+    const srcEid =
+      Number(resolveLayerZeroSrcEid(selectedSourceChain || {})) ||
+      resolveLzEidFromChainRef(String(selectedOnchainStatusQuery.data?.sourceChainId || '')) ||
+      undefined;
+    const dstPeerHex = receiverAddress
+      ? addressToPaddedBytesHex(receiverAddress)
+      : String(selectedOnchainStatusQuery.data?.layerZeroPeer || '').trim();
+    const srcSenderHex = senderAddress ? addressToPaddedBytesHex(senderAddress) : '';
+
+    const missing: string[] = [];
+    if (!senderAddress) missing.push('senderAddress');
+    if (!receiverAddress) missing.push('receiverAddress');
+    if (!dstEid) missing.push('dstEid');
+    if (!srcEid) missing.push('srcEid');
+    if (!dstPeerHex) missing.push('dstPeerHex');
+    if (!srcSenderHex) missing.push('srcSenderHex');
+    if (missing.length > 0) {
+      toast.error(`${t('admin.crosschain_configs_view.toasts.preflight_missing_route_payload')} (${missing.join(', ')})`);
+      return;
+    }
+
+    try {
+      await configureLayerZeroE2EMutation.mutateAsync({
+        sourceChainId,
+        destChainId,
+        source: {
+          registerAdapterIfMissing: true,
+          setDefaultBridgeType: true,
+          senderAddress,
+          dstEid,
+          dstPeerHex,
+          optionsHex: '',
+          registerDelegate: true,
+          authorizeVaultSpender: true,
+        },
+        destination: {
+          receiverAddress,
+          srcEid,
+          srcSenderHex,
+          authorizeVaultSpender: true,
+          authorizeGatewayAdapter: true,
+        },
+      });
+      await overviewQuery.refetch();
+      await preflightQuery.refetch();
+      await layerZeroE2EStatusQuery.refetch();
+      toast.success(t('admin.crosschain_configs_view.toasts.manual_layerzero_success'));
+    } catch (error: any) {
       toast.error(error?.message || t('admin.crosschain_configs_view.toasts.manual_layerzero_failed'));
     }
   };
@@ -1421,7 +1836,16 @@ export const useAdminCrosschainConfigs = () => {
       manualDestinationContractHex,
       manualCCIPChainSelector,
       manualCCIPDestinationAdapterHex,
+      manualCCIPDestinationGasLimit,
+      manualCCIPDestinationExtraArgsHex,
+      manualCCIPDestinationFeeTokenAddress,
+      manualCCIPSourceChainSelector,
+      manualCCIPTrustedSenderHex,
+      manualCCIPAllowSourceChain,
       manualLayerZeroDstEid,
+      manualLayerZeroSrcEid,
+      manualLayerZeroSenderAddress,
+      manualLayerZeroReceiverAddress,
       manualLayerZeroPeerHex,
       manualLayerZeroOptionsHex,
       policyDefaultBridgeType,
@@ -1446,6 +1870,8 @@ export const useAdminCrosschainConfigs = () => {
       selectedSourceErrorRoutes,
       wizardReport,
       preflight: preflightQuery.data,
+      layerZeroE2EStatus: layerZeroE2EStatusQuery.data,
+      isLayerZeroE2EStatusLoading: layerZeroE2EStatusQuery.isLoading || layerZeroE2EStatusQuery.isFetching,
       isRoutePolicyLoading: routePoliciesQuery.isLoading || routePoliciesQuery.isFetching,
       isPreflightLoading: preflightQuery.isLoading || preflightQuery.isFetching,
       isLoading: chainQuery.isLoading || overviewQuery.isLoading,
@@ -1466,7 +1892,16 @@ export const useAdminCrosschainConfigs = () => {
       setManualDestinationContractHex,
       setManualCCIPChainSelector,
       setManualCCIPDestinationAdapterHex,
+      setManualCCIPDestinationGasLimit,
+      setManualCCIPDestinationExtraArgsHex,
+      setManualCCIPDestinationFeeTokenAddress,
+      setManualCCIPSourceChainSelector,
+      setManualCCIPTrustedSenderHex,
+      setManualCCIPAllowSourceChain,
       setManualLayerZeroDstEid,
+      setManualLayerZeroSrcEid,
+      setManualLayerZeroSenderAddress,
+      setManualLayerZeroReceiverAddress,
       setManualLayerZeroPeerHex,
       setManualLayerZeroOptionsHex,
       setPolicyDefaultBridgeType,
@@ -1499,6 +1934,7 @@ export const useAdminCrosschainConfigs = () => {
       exportWizardReport: handleExportWizardReport,
       applyPreflightSuggestion: handleApplyPreflightSuggestion,
       runPreflightNextStep: handleRunPreflightNextStep,
+      configureLayerZeroE2ESelected: handleConfigureLayerZeroE2ESelected,
     },
   };
 };

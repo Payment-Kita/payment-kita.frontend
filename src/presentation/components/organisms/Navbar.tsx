@@ -64,13 +64,13 @@ export default function Navbar({ mode = 'auto' }: NavbarProps) {
               <div className="relative">
                 <img
                   src="/logo.png"
-                  alt="Pay-Chain Logo"
+                  alt="Payment-Kita Logo"
                   className="h-9 w-9 object-contain transition-transform duration-300 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-accent-purple/30 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
               <span className="text-foreground font-bold text-xl tracking-tight hidden sm:block">
-                Pay-Chain
+                Payment-Kita
               </span>
             </Link>
           </div>

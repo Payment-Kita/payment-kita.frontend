@@ -1,8 +1,17 @@
 import { useEffect, useState, useMemo } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAccount, useSwitchChain, useSendTransaction, usePublicClient } from 'wagmi';
-import { useCreatePaymentAppMutation, useChainsQuery, useTokensQuery } from '@/data/usecase';
+import {
+  useCreatePaymentAppMutation,
+  useChainsQuery,
+  useClaimPrivacyEscrowMutation,
+  usePaymentPrivacyStatusQuery,
+  useRefundPrivacyEscrowMutation,
+  useRetryPrivacyForwardMutation,
+  useTokensQuery,
+} from '@/data/usecase';
 import type { CreatePaymentAppRequest } from '@/data/model/request';
+import type { PaymentPrivacyRecoveryAction } from '@/data/model/entity';
 import { encodeFunctionData, erc20Abi, formatUnits, parseUnits } from 'viem';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, SystemProgram, Transaction, TransactionInstruction } from '@solana/web3.js';
@@ -38,6 +47,16 @@ export interface UseAppReturn {
   destTokenAddress: string;
   receiver: string;
   setReceiver: (addr: string) => void;
+  paymentMode: 'regular' | 'privacy';
+  setPaymentMode: (mode: 'regular' | 'privacy') => void;
+  bridgeOptionSelection: 'default' | '0' | '1' | '2';
+  setBridgeOptionSelection: (value: 'default' | '0' | '1' | '2') => void;
+  bridgeTokenSource: string;
+  setBridgeTokenSource: (value: string) => void;
+  minBridgeAmountOut: string;
+  setMinBridgeAmountOut: (value: string) => void;
+  minDestAmountOut: string;
+  setMinDestAmountOut: (value: string) => void;
   filteredTokens: TokenItemData[];
   selectedToken: TokenItemData | undefined;
   chainTokenItems: ChainTokenItem[];
@@ -71,7 +90,43 @@ export interface UseAppReturn {
     isSameChain?: boolean;
     feeSource: 'onchain' | 'legacy';
   } | null;
+  txPlanPreview: {
+    chainType: 'EVM' | 'SVM' | 'UNKNOWN';
+    approval?: {
+      to?: string;
+      spender?: string;
+      amount?: string;
+      data?: string;
+    };
+    transactions: Array<{
+      kind?: string;
+      to?: string;
+      value?: string;
+      data?: string;
+      spender?: string;
+      amount?: string;
+    }>;
+    finalCall?: {
+      to?: string;
+      value?: string;
+      data?: string;
+      programId?: string;
+    };
+  } | null;
   txHash: string | null;
+  activePaymentId: string | null;
+  privacyStatus: {
+    paymentId: string;
+    stage: string;
+    isPrivacyCandidate: boolean;
+    signals?: string[];
+    reason?: string;
+  } | null;
+  privacyStatusLoading: boolean;
+  privacyStatusError: string | null;
+  privacyActionLoading: boolean;
+  privacyActionError: string | null;
+  handlePrivacyAction: (action: PaymentPrivacyRecoveryAction) => Promise<void>;
   currentChain: any | undefined;
   handlePay: () => void;
   isOwnAddress: boolean;
@@ -107,13 +162,19 @@ export function useApp(): UseAppReturn {
   const publicClient = usePublicClient();
   const { getNativeBalance, getErc20Balance, getSplTokenBalance } = useUnifiedWallet();
   const createPaymentMutation = useCreatePaymentAppMutation();
+  const retryPrivacyMutation = useRetryPrivacyForwardMutation();
+  const claimPrivacyMutation = useClaimPrivacyEscrowMutation();
+  const refundPrivacyMutation = useRefundPrivacyEscrowMutation();
   const { connection } = useConnection();
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [routeErrorDiagnostics, setRouteErrorDiagnostics] = useState<RouteErrorDiagnostics | null>(null);
   const [paymentCostPreview, setPaymentCostPreview] = useState<UseAppReturn['paymentCostPreview']>(null);
+  const [txPlanPreview, setTxPlanPreview] = useState<UseAppReturn['txPlanPreview']>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
+  const [activePaymentId, setActivePaymentId] = useState<string | null>(null);
+  const [privacyActionError, setPrivacyActionError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
   // Form State
@@ -123,8 +184,28 @@ export function useApp(): UseAppReturn {
   const [sourceTokenAddress, setSourceTokenAddress] = useState('');
   const [destTokenAddress, setDestTokenAddress] = useState('');
   const [receiver, setReceiver] = useState('');
+  const [paymentMode, setPaymentMode] = useState<'regular' | 'privacy'>('regular');
+  const [bridgeOptionSelection, setBridgeOptionSelection] = useState<'default' | '0' | '1' | '2'>('default');
+  const [bridgeTokenSource, setBridgeTokenSource] = useState('');
+  const [minBridgeAmountOut, setMinBridgeAmountOut] = useState('');
+  const [minDestAmountOut, setMinDestAmountOut] = useState('');
   const [isOwnAddress, setIsOwnAddress] = useState(false);
   const [initializedFromQuery, setInitializedFromQuery] = useState(false);
+  const {
+    data: privacyStatusResponse,
+    isLoading: privacyStatusLoading,
+    error: privacyStatusQueryError,
+    refetch: refetchPrivacyStatus,
+  } = usePaymentPrivacyStatusQuery(activePaymentId || '');
+  const privacyStatus = privacyStatusResponse?.privacyStatus ?? null;
+  const privacyStatusError =
+    privacyStatusQueryError instanceof Error
+      ? privacyStatusQueryError.message
+      : privacyStatusQueryError
+        ? 'Failed to fetch privacy status'
+        : null;
+  const privacyActionLoading =
+    retryPrivacyMutation.isPending || claimPrivacyMutation.isPending || refundPrivacyMutation.isPending;
 
   // Derived Data
   const chainItems = useMemo<ChainItemData[]>(() => 
@@ -160,6 +241,17 @@ export function useApp(): UseAppReturn {
         token.address === sourceTokenAddress ||
         (token.isNative && sourceTokenAddress === '0x0000000000000000000000000000000000000000')
     ), [filteredTokens, sourceTokenAddress]);
+
+  const selectedDestToken = useMemo(
+    () =>
+      tokenItems.find(
+        (token) =>
+          token.chainId === destChainId &&
+          (token.address === destTokenAddress ||
+            (token.isNative && destTokenAddress === '0x0000000000000000000000000000000000000000'))
+      ),
+    [tokenItems, destChainId, destTokenAddress]
+  );
 
   const chainTokenItems = useMemo<ChainTokenItem[]>(
     () =>
@@ -449,11 +541,59 @@ export function useApp(): UseAppReturn {
     setAmountDisplay(formatMoneyDisplay(sanitized));
   };
 
+  const handlePrivacyAction = async (action: PaymentPrivacyRecoveryAction) => {
+    try {
+      setPrivacyActionError(null);
+      if (!activePaymentId) {
+        throw new Error('No active paymentId for privacy recovery');
+      }
+      if (!isEvmConnected || !evmAddress) {
+        throw new Error(t('payments.connect_wallet_notice'));
+      }
+
+      const txData = await (async () => {
+        if (action === 'retry') {
+          return retryPrivacyMutation.mutateAsync(activePaymentId);
+        }
+        if (action === 'claim') {
+          return claimPrivacyMutation.mutateAsync(activePaymentId);
+        }
+        return refundPrivacyMutation.mutateAsync(activePaymentId);
+      })();
+
+      const targetChainIdNum = caip2ToEvmChainId(txData.chainId || '');
+      if (Number.isFinite(targetChainIdNum) && targetChainIdNum > 0 && chainId !== targetChainIdNum) {
+        await switchChain({ chainId: targetChainIdNum });
+      }
+
+      const hash = await sendTransactionAsync({
+        to: txData.contractAddress as `0x${string}`,
+        data: txData.calldata as `0x${string}`,
+        value: txData.value ? BigInt(txData.value) : parseUnits('0', 0),
+      });
+      setTxHash(hash);
+      if (publicClient) {
+        const receipt = await publicClient.waitForTransactionReceipt({ hash });
+        if (receipt.status !== 'success') {
+          throw new Error('Privacy recovery transaction failed');
+        }
+      }
+      await refetchPrivacyStatus();
+    } catch (e: any) {
+      const message = e instanceof Error ? e.message : 'Failed to execute privacy recovery action';
+      setPrivacyActionError(message);
+    }
+  };
+
   const handlePay = async () => {
     setIsLoading(true);
+    setIsSuccess(false);
+    setActivePaymentId(null);
+    setPrivacyActionError(null);
     setError(null);
     setRouteErrorDiagnostics(null);
     setPaymentCostPreview(null);
+    setTxPlanPreview(null);
     let diagnosticsTarget: { paymentId: string; sourceChainId: string } | null = null;
     try {
       if (!isEvmConnected || !evmAddress) {
@@ -466,6 +606,43 @@ export function useApp(): UseAppReturn {
       if (addressError) {
         throw new Error(addressError);
       }
+      const bridgeTokenSourceValue = bridgeTokenSource.trim();
+      if (bridgeTokenSourceValue && !/^0x[a-fA-F0-9]{40}$/.test(bridgeTokenSourceValue)) {
+        throw new Error('Bridge Token Source must be a valid EVM address');
+      }
+      const sourceDecimals = selectedToken?.decimals ?? 18;
+      const destDecimals = selectedDestToken?.decimals ?? sourceDecimals;
+      const bridgeTokenDecimals = (() => {
+        if (!bridgeTokenSourceValue) return sourceDecimals;
+        const token = tokenItems.find(
+          (item) =>
+            item.chainId === sourceChainId &&
+            String(item.address || '').toLowerCase() === bridgeTokenSourceValue.toLowerCase()
+        );
+        return token?.decimals ?? sourceDecimals;
+      })();
+      const parseDisplayAmountToRaw = (displayValue: string, decimals: number, label: string): string | null => {
+        const normalized = stripMoneyFormat(displayValue).replace(/,/g, '').trim();
+        if (!normalized) return null;
+        if (!/^\d+(\.\d+)?$/.test(normalized)) {
+          throw new Error(`${label} must be a valid number`);
+        }
+        try {
+          return parseUnits(normalized, decimals).toString();
+        } catch {
+          throw new Error(`${label} is invalid for token decimals`);
+        }
+      };
+      const minBridgeAmountOutValue = parseDisplayAmountToRaw(
+        minBridgeAmountOut,
+        bridgeTokenDecimals,
+        'Min Bridge Amount Out'
+      );
+      const minDestAmountOutValue = parseDisplayAmountToRaw(
+        minDestAmountOut,
+        destDecimals,
+        'Min Destination Amount Out'
+      );
 
       const selectedSourceChain = (chainsData?.items || []).find((chain) => String(chain.id) === sourceChainId);
       const selectedDestChain = (chainsData?.items || []).find((chain) => String(chain.id) === destChainId);
@@ -480,10 +657,52 @@ export function useApp(): UseAppReturn {
         amount,
         decimals: selectedToken?.decimals ?? 18,
         receiverAddress: receiver,
+        mode: paymentMode,
+        bridgeOption: bridgeOptionSelection === 'default' ? null : Number(bridgeOptionSelection),
+        bridgeTokenSource: bridgeTokenSourceValue || null,
+        minBridgeAmountOut: minBridgeAmountOutValue || null,
+        minDestAmountOut: minDestAmountOutValue || null,
+        privacyIntentId: null,
+        privacyStealthReceiver: null,
       };
       
       const payment = await createPaymentMutation.mutateAsync(request);
       if (!payment) throw new Error(t('pay_page.process_failed'));
+      setActivePaymentId(payment.paymentId);
+      const paymentSourceChain = String(payment.sourceChainId || selectedSourceChain?.caip2 || '');
+      const previewChainType: 'EVM' | 'SVM' | 'UNKNOWN' = paymentSourceChain.startsWith('eip155:')
+        ? 'EVM'
+        : paymentSourceChain.startsWith('solana:')
+          ? 'SVM'
+          : 'UNKNOWN';
+      const previewTransactions = Array.isArray(payment.signatureData?.transactions)
+        ? payment.signatureData.transactions.map((item) => ({
+          kind: item?.kind,
+          to: item?.to,
+          value: undefined,
+          data: item?.data,
+          spender: item?.spender,
+          amount: item?.amount,
+        }))
+        : [];
+      setTxPlanPreview({
+        chainType: previewChainType,
+        approval: payment.signatureData?.approval
+          ? {
+            to: payment.signatureData.approval.to,
+            spender: payment.signatureData.approval.spender,
+            amount: payment.signatureData.approval.amount,
+            data: payment.signatureData.approval.data,
+          }
+          : undefined,
+        transactions: previewTransactions,
+        finalCall: {
+          to: payment.signatureData?.to,
+          value: payment.signatureData?.value,
+          data: payment.signatureData?.data,
+          programId: payment.signatureData?.programId,
+        },
+      });
 
       const sourceChain = payment.sourceChainId || selectedSourceChain?.caip2 || '';
       if (!sourceChain) throw new Error(t('common.error'));
@@ -677,6 +896,16 @@ export function useApp(): UseAppReturn {
     }
   };
 
+  useEffect(() => {
+    if (!activePaymentId || paymentMode !== 'privacy') return;
+    const stage = String(privacyStatus?.stage || '').toLowerCase();
+    if (stage === 'privacy_forwarded_final' || stage === 'not_privacy') return;
+    const timer = setInterval(() => {
+      void refetchPrivacyStatus();
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [activePaymentId, paymentMode, privacyStatus?.stage, refetchPrivacyStatus]);
+
   return {
     isConnected,
     address,
@@ -692,6 +921,16 @@ export function useApp(): UseAppReturn {
     destTokenAddress,
     receiver,
     setReceiver,
+    paymentMode,
+    setPaymentMode,
+    bridgeOptionSelection,
+    setBridgeOptionSelection,
+    bridgeTokenSource,
+    setBridgeTokenSource,
+    minBridgeAmountOut,
+    setMinBridgeAmountOut,
+    minDestAmountOut,
+    setMinDestAmountOut,
     filteredTokens,
     selectedToken,
     chainTokenItems,
@@ -712,7 +951,15 @@ export function useApp(): UseAppReturn {
     error,
     routeErrorDiagnostics,
     paymentCostPreview,
+    txPlanPreview,
     txHash,
+    activePaymentId,
+    privacyStatus,
+    privacyStatusLoading,
+    privacyStatusError,
+    privacyActionLoading,
+    privacyActionError,
+    handlePrivacyAction,
     currentChain: chainsData?.items?.find(c => String(c.networkId) === String(chainId) || c.id === chainId),
     handlePay,
     isOwnAddress,

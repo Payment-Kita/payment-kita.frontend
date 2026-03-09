@@ -1,4 +1,7 @@
 const MESSAGE_REPLACEMENTS: Array<[string, string]> = [
+  ['quote_failed_schema_mismatch', 'quote schema mismatch (ABI router/adapter tidak sinkron)'],
+  ['function selector was not recognized and there\'s no fallback function', 'quote schema mismatch (ABI router/adapter tidak sinkron)'],
+  ['no method with id', 'quote schema mismatch (ABI router/adapter tidak sinkron): no method with id'],
   ['fee quote call failed for this bridge route', 'fee quote bridge gagal'],
   ['fee quote call failed for this route', 'fee quote route gagal'],
   ['route not configured', 'route belum dikonfigurasi'],
@@ -15,6 +18,17 @@ export const normalizeCrosschainErrorMessage = (message: string): string => {
   const text = String(message || '').trim();
   if (!text) return text;
   return MESSAGE_REPLACEMENTS.reduce((acc, [from, to]) => acc.replace(from, to), text);
+};
+
+export const isQuoteSchemaMismatchMessage = (message: string): boolean => {
+  const value = String(message || '').toLowerCase();
+  if (!value) return false;
+  return (
+    value.includes('quote_failed_schema_mismatch') ||
+    value.includes('selector was not recognized') ||
+    value.includes("there's no fallback function") ||
+    value.includes('no method with id')
+  );
 };
 
 export const recommendActionByErrorCode = (code: string): string => {
@@ -34,4 +48,3 @@ export const recommendActionByErrorCode = (code: string): string => {
       return '';
   }
 };
-

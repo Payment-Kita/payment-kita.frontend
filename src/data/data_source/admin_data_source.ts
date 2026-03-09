@@ -75,8 +75,15 @@ export interface HyperbridgeConfigPayload {
 export interface CCIPConfigPayload {
   sourceChainId: string;
   destChainId: string;
-  chainSelector?: number;
+  chainSelector?: string | number;
   destinationAdapterHex?: string;
+  destinationGasLimit?: number;
+  destinationExtraArgsHex?: string;
+  destinationFeeTokenAddress?: string;
+  destinationReceiverAddress?: string;
+  sourceChainSelector?: string | number;
+  trustedSenderHex?: string;
+  allowSourceChain?: boolean;
 }
 
 export interface LayerZeroConfigPayload {
@@ -85,6 +92,40 @@ export interface LayerZeroConfigPayload {
   dstEid?: number;
   peerHex?: string;
   optionsHex?: string;
+}
+
+export interface LayerZeroE2EConfigurePayload {
+  sourceChainId: string;
+  destChainId: string;
+  source: {
+    registerAdapterIfMissing?: boolean;
+    setDefaultBridgeType?: boolean;
+    senderAddress?: string;
+    dstEid?: number;
+    dstPeerHex?: string;
+    optionsHex?: string;
+    registerDelegate?: boolean;
+    authorizeVaultSpender?: boolean;
+  };
+  destination: {
+    receiverAddress?: string;
+    srcEid?: number;
+    srcSenderHex?: string;
+    vaultAddress?: string;
+    gatewayAddress?: string;
+    authorizeVaultSpender?: boolean;
+    authorizeGatewayAdapter?: boolean;
+  };
+}
+
+export interface LayerZeroE2EStatusParams {
+  sourceChainId: string;
+  destChainId: string;
+  destinationReceiverAddress?: string;
+  destinationSrcEid?: number;
+  destinationSrcSenderHex?: string;
+  destinationVaultAddress?: string;
+  destinationGatewayAddress?: string;
 }
 
 export interface RoutePolicyPayload {
@@ -97,15 +138,6 @@ export interface RoutePolicyPayload {
   overheadBytes?: string;
   minFee?: string;
   maxFee?: string;
-}
-
-export interface LayerZeroPolicyPayload {
-  sourceChainId: string;
-  destChainId: string;
-  dstEid: number;
-  peerHex: string;
-  optionsHex?: string;
-  isActive?: boolean;
 }
 
 export interface CrosschainOverviewParams {
@@ -429,6 +461,26 @@ export class AdminDataSource {
     return response;
   }
 
+  async configureLayerZeroE2E(data: LayerZeroE2EConfigurePayload): Promise<any> {
+    const { data: response, error } = await httpClient.post<any>(API_ENDPOINTS.ADMIN_ONCHAIN_ADAPTER_LAYERZERO_CONFIGURE_E2E, data);
+    if (error) throw new Error(error);
+    return response?.result || response;
+  }
+
+  async getLayerZeroE2EStatus(params: LayerZeroE2EStatusParams): Promise<any> {
+    const query = new URLSearchParams();
+    query.append('sourceChainId', params.sourceChainId);
+    query.append('destChainId', params.destChainId);
+    if (params.destinationReceiverAddress) query.append('destinationReceiverAddress', params.destinationReceiverAddress);
+    if (params.destinationSrcEid !== undefined) query.append('destinationSrcEid', String(params.destinationSrcEid));
+    if (params.destinationSrcSenderHex) query.append('destinationSrcSenderHex', params.destinationSrcSenderHex);
+    if (params.destinationVaultAddress) query.append('destinationVaultAddress', params.destinationVaultAddress);
+    if (params.destinationGatewayAddress) query.append('destinationGatewayAddress', params.destinationGatewayAddress);
+    const { data, error } = await httpClient.get<{ status: any }>(`${API_ENDPOINTS.ADMIN_ONCHAIN_ADAPTER_LAYERZERO_E2E_STATUS}?${query.toString()}`);
+    if (error) throw new Error(error);
+    return data?.status;
+  }
+
   async getCrosschainPreflight(params: { sourceChainId: string; destChainId: string }): Promise<any> {
     const query = new URLSearchParams();
     query.append('sourceChainId', params.sourceChainId);
@@ -519,36 +571,6 @@ export class AdminDataSource {
     if (error) throw new Error(error);
   }
 
-  async getLayerZeroPolicies(params?: { page?: number; limit?: number; sourceChainId?: string; destChainId?: string; activeOnly?: boolean }): Promise<{ items: any[]; meta?: any }> {
-    const query = new URLSearchParams();
-    if (params?.page) query.append('page', String(params.page));
-    if (params?.limit) query.append('limit', String(params.limit));
-    if (params?.sourceChainId) query.append('sourceChainId', params.sourceChainId);
-    if (params?.destChainId) query.append('destChainId', params.destChainId);
-    if (params?.activeOnly !== undefined) query.append('activeOnly', String(params.activeOnly));
-    const url = query.toString() ? `${API_ENDPOINTS.ADMIN_LAYERZERO_CONFIGS}?${query.toString()}` : API_ENDPOINTS.ADMIN_LAYERZERO_CONFIGS;
-    const { data, error } = await httpClient.get<{ items: any[]; meta?: any }>(url);
-    if (error) throw new Error(error);
-    return { items: data?.items || [], meta: data?.meta };
-  }
-
-  async createLayerZeroPolicy(data: LayerZeroPolicyPayload): Promise<any> {
-    const { data: response, error } = await httpClient.post<any>(API_ENDPOINTS.ADMIN_LAYERZERO_CONFIGS, data);
-    if (error) throw new Error(error);
-    return response;
-  }
-
-  async updateLayerZeroPolicy(id: string, data: LayerZeroPolicyPayload): Promise<any> {
-    const { data: response, error } = await httpClient.put<any>(API_ENDPOINTS.ADMIN_LAYERZERO_CONFIG_BY_ID(id), data);
-    if (error) throw new Error(error);
-    return response;
-  }
-
-  async deleteLayerZeroPolicy(id: string): Promise<void> {
-    const { error } = await httpClient.delete(API_ENDPOINTS.ADMIN_LAYERZERO_CONFIG_BY_ID(id));
-    if (error) throw new Error(error);
-  }
-
   async getRouteErrorDiagnostics(params: RouteErrorDiagnosticsParams): Promise<any> {
     const query = new URLSearchParams();
     query.append('sourceChainId', params.sourceChainId);
@@ -559,13 +581,13 @@ export class AdminDataSource {
     return data?.diagnostics;
   }
 
-  async checkTokenPairSupport(params: { chainId: string; tokenIn: string; tokenOut: string }): Promise<{ exists: boolean; isDirect: boolean; path: string[] }> {
+  async checkTokenPairSupport(params: { chainId: string; tokenIn: string; tokenOut: string }): Promise<{ exists: boolean; isDirect: boolean; path: string[]; executable?: boolean; reasons?: string[]; swapRouterV3?: string; universalRouter?: string }> {
     const query = new URLSearchParams();
     query.append('chainId', params.chainId);
     query.append('tokenIn', params.tokenIn);
     query.append('tokenOut', params.tokenOut);
 
-    const { data, error } = await httpClient.get<{ exists: boolean; isDirect: boolean; path: string[] }>(
+    const { data, error } = await httpClient.get<{ exists: boolean; isDirect: boolean; path: string[]; executable?: boolean; reasons?: string[]; swapRouterV3?: string; universalRouter?: string }>(
       `${API_ENDPOINTS.TOKENS_CHECK_PAIR}?${query.toString()}`
     );
     if (error) throw new Error(error);

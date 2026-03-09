@@ -45,7 +45,6 @@ const adminDrawerNavItems = [
   { href: '/admin/fee-configs', labelKey: 'admin.feeConfigs', icon: Percent },
   { href: '/admin/onchain-adapters', labelKey: 'admin.onchainAdapters', icon: Route },
   { href: '/admin/route-policies', labelKey: 'admin.routePolicies', icon: Route },
-  { href: '/admin/layerzero-configs', labelKey: 'admin.layerzeroConfigs', icon: Shuffle },
   { href: '/admin/crosschain-config', labelKey: 'admin.crosschainConfigs', icon: Shuffle },
 ];
 
@@ -99,7 +98,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
           <div className="flex items-center gap-3">
             <img
               src="/logo.png"
-              alt="Pay-Chain Logo"
+              alt="Payment-Kita Logo"
               className="h-8 w-8 object-contain"
             />
             <span className="text-foreground font-bold text-lg">{t('common.brand')}</span>

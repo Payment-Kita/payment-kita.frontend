@@ -1,7 +1,7 @@
 'use client';
 
 import { BaseModal } from '@/presentation/components/molecules';
-import { PayChainLogo } from '@/presentation/components/atoms';
+import { PaymentKitaLogo } from '@/presentation/components/atoms';
 import { WalletConnectActions } from '@/presentation/components/molecules';
 import { useWalletConnectModal } from '@/presentation/hooks';
 import { useTranslation } from '@/presentation/hooks';
@@ -74,7 +74,7 @@ export default function WalletConnectModal({ isOpen, onClose }: WalletConnectMod
       footer={null}
     >
       <div className="flex flex-col items-center gap-6">
-        <PayChainLogo width={120} height={120} priority />
+        <PaymentKitaLogo width={120} height={120} priority />
         {address && (
           <div className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-center text-xs text-muted">
             {t('wallets.active_label')}: <span className="font-semibold text-foreground">{activeWallet?.toUpperCase()}</span>{' '}

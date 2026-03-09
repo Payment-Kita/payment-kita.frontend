@@ -54,7 +54,6 @@ export const adminNavItems = [
   { href: '/admin/fee-configs', labelKey: 'admin.feeConfigs', icon: Percent },
   { href: '/admin/onchain-adapters', labelKey: 'admin.onchainAdapters', icon: Route },
   { href: '/admin/route-policies', labelKey: 'admin.routePolicies', icon: Route },
-  { href: '/admin/layerzero-configs', labelKey: 'admin.layerzeroConfigs', icon: Shuffle },
   { href: '/admin/crosschain-config', labelKey: 'admin.crosschainConfigs', icon: Shuffle },
 ];
 
@@ -83,13 +82,13 @@ export default function Sidebar() {
           <div className="relative">
             <img
               src="/logo.png"
-              alt="Pay-Chain Logo"
+              alt="Payment-Kita Logo"
               className="h-8 w-8 object-contain transition-transform duration-300 group-hover:scale-110"
             />
             <div className="absolute inset-0 bg-accent-purple/30 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </div>
           <span className="text-foreground font-bold text-lg tracking-tight">
-            Pay-Chain
+            Payment-Kita
           </span>
         </Link>
       </div>

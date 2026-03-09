@@ -1,5 +1,5 @@
 
-> pay-chain.frontend@0.1.0 test /Users/staffinc/Documents/Development/pay-chain/pay-chain.frontend
+> payment-kita.frontend@0.1.0 test /Users/staffinc/Documents/Development/payment-kita/payment-kita.frontend
 > jest
 
 PASS test/unit/useDashboard.test.ts

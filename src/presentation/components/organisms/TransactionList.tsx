@@ -1,18 +1,22 @@
 'use client';
 
 import { formatCurrency, formatDate } from '@/core/utils';
-import type { Payment } from '@/data/model/entity';
+import type { Payment, PaymentPrivacyStatus } from '@/data/model/entity';
 import { useTranslation } from '@/presentation/hooks';
 import { ArrowRight, Clock, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 
 interface TransactionListProps {
   payments: Payment[];
+  privacyStatusByPaymentId?: Record<string, PaymentPrivacyStatus>;
+  privacyStatusLoading?: boolean;
   showAll?: boolean;
   title?: string;
 }
 
 export default function TransactionList({ 
   payments, 
+  privacyStatusByPaymentId,
+  privacyStatusLoading = false,
   showAll = false,
   title
 }: TransactionListProps) {
@@ -30,6 +34,61 @@ export default function TransactionList({
       default:
         return <XCircle className="w-4 h-4 text-red-400" />;
     }
+  };
+
+  const getPrivacyStageStyles = (stage: string) => {
+    switch (stage) {
+      case 'privacy_forwarded_final':
+      case 'privacy_resolved':
+        return 'bg-accent-green/10 text-accent-green border-accent-green/20';
+      case 'privacy_forward_failed_retrying':
+        return 'bg-red-500/10 text-red-400 border-red-500/20';
+      case 'privacy_claimable':
+        return 'bg-blue-500/10 text-blue-300 border-blue-400/20';
+      case 'privacy_refundable':
+        return 'bg-amber-500/10 text-amber-300 border-amber-500/20';
+      case 'privacy_settled_to_stealth':
+        return 'bg-blue-500/10 text-blue-300 border-blue-400/20';
+      case 'privacy_pending_on_source':
+        return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+      default:
+        return 'bg-surface/60 text-muted border-white/10';
+    }
+  };
+
+  const getPrivacyStageLabel = (stage: string) => {
+    switch (stage) {
+      case 'privacy_forwarded_final':
+        return t('transaction_list.privacy_forwarded_final');
+      case 'privacy_resolved':
+        return t('transaction_list.privacy_resolved');
+      case 'privacy_forward_failed_retrying':
+        return t('transaction_list.privacy_forward_failed_retrying');
+      case 'privacy_claimable':
+        return t('transaction_list.privacy_claimable');
+      case 'privacy_refundable':
+        return t('transaction_list.privacy_refundable');
+      case 'privacy_settled_to_stealth':
+        return t('transaction_list.privacy_settled_to_stealth');
+      case 'privacy_pending_on_source':
+        return t('transaction_list.privacy_pending_on_source');
+      default:
+        return '';
+    }
+  };
+
+  const buildPrivacyTooltip = (privacy: PaymentPrivacyStatus) => {
+    const lines: string[] = [`${t('transaction_list.privacy_stage_label')}: ${privacy.stage}`];
+    if (privacy.reason && privacy.reason.trim().length > 0) {
+      lines.push(`${t('transaction_list.privacy_reason_label')}: ${privacy.reason.trim()}`);
+    }
+    if (privacy.signals && privacy.signals.length > 0) {
+      lines.push(`${t('transaction_list.privacy_signals_label')}: ${privacy.signals.join(', ')}`);
+    }
+    if (lines.length === 0) {
+      return undefined;
+    }
+    return lines.join('\n');
   };
 
   const getStatusStyles = (status: string) => {
@@ -92,6 +151,25 @@ export default function TransactionList({
               <p className="text-foreground font-semibold">
                 {formatCurrency(parseFloat(payment.sourceAmount ?? '0'))}
               </p>
+              {privacyStatusLoading ? (
+                <span className="inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border bg-surface/50 text-muted border-white/10">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  {t('transaction_list.privacy_loading')}
+                </span>
+              ) : null}
+              {(() => {
+                const privacy = privacyStatusByPaymentId?.[payment.paymentId];
+                if (!privacy || !privacy.isPrivacyCandidate) return null;
+                if (privacy.stage === 'privacy_unknown' || privacy.stage === 'not_privacy') return null;
+                return (
+                  <span
+                    className={`inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border ${getPrivacyStageStyles(privacy.stage)}`}
+                    title={buildPrivacyTooltip(privacy)}
+                  >
+                    <span>{getPrivacyStageLabel(privacy.stage)}</span>
+                  </span>
+                );
+              })()}
               <span
                 className={`inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border ${getStatusStyles(payment.status)}`}
               >

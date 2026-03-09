@@ -19,6 +19,11 @@ export {
   usePaymentsQuery,
   usePaymentQuery,
   usePaymentEventsQuery,
+  usePaymentPrivacyStatusQuery,
+  usePaymentPrivacyStatusesQuery,
+  useRetryPrivacyForwardMutation,
+  useClaimPrivacyEscrowMutation,
+  useRefundPrivacyEscrowMutation,
   useCreatePaymentMutation,
 } from './payment_usecase';
 

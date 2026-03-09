@@ -365,7 +365,19 @@ export const useSetHyperbridgeConfig = () => {
 export const useSetCCIPConfig = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { sourceChainId: string; destChainId: string; chainSelector?: number; destinationAdapterHex?: string }) =>
+    mutationFn: (data: {
+      sourceChainId: string;
+      destChainId: string;
+      chainSelector?: string | number;
+      destinationAdapterHex?: string;
+      destinationGasLimit?: number;
+      destinationExtraArgsHex?: string;
+      destinationFeeTokenAddress?: string;
+      destinationReceiverAddress?: string;
+      sourceChainSelector?: string | number;
+      trustedSenderHex?: string;
+      allowSourceChain?: boolean;
+    }) =>
       adminRepository.setCCIPConfig(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'onchain-adapters', 'status'] });
@@ -381,6 +393,78 @@ export const useSetLayerZeroConfig = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'onchain-adapters', 'status'] });
     },
+  });
+};
+
+export const useConfigureLayerZeroE2E = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      sourceChainId: string;
+      destChainId: string;
+      source: {
+        registerAdapterIfMissing?: boolean;
+        setDefaultBridgeType?: boolean;
+        senderAddress?: string;
+        dstEid?: number;
+        dstPeerHex?: string;
+        optionsHex?: string;
+        registerDelegate?: boolean;
+        authorizeVaultSpender?: boolean;
+      };
+      destination: {
+        receiverAddress?: string;
+        srcEid?: number;
+        srcSenderHex?: string;
+        vaultAddress?: string;
+        gatewayAddress?: string;
+        authorizeVaultSpender?: boolean;
+        authorizeGatewayAdapter?: boolean;
+      };
+    }) => adminRepository.configureLayerZeroE2E(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'onchain-adapters', 'status'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'layerzero-e2e-status'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'crosschain-config', 'overview'] });
+    },
+  });
+};
+
+export const useLayerZeroE2EStatus = (
+  params?: {
+    sourceChainId?: string;
+    destChainId?: string;
+    destinationReceiverAddress?: string;
+    destinationSrcEid?: number;
+    destinationSrcSenderHex?: string;
+    destinationVaultAddress?: string;
+    destinationGatewayAddress?: string;
+  },
+  enabled = true
+) => {
+  return useQuery({
+    queryKey: [
+      'admin',
+      'layerzero-e2e-status',
+      params?.sourceChainId,
+      params?.destChainId,
+      params?.destinationReceiverAddress,
+      params?.destinationSrcEid,
+      params?.destinationSrcSenderHex,
+      params?.destinationVaultAddress,
+      params?.destinationGatewayAddress,
+    ],
+    queryFn: () =>
+      adminRepository.getLayerZeroE2EStatus({
+        sourceChainId: params!.sourceChainId!,
+        destChainId: params!.destChainId!,
+        destinationReceiverAddress: params?.destinationReceiverAddress,
+        destinationSrcEid: params?.destinationSrcEid,
+        destinationSrcSenderHex: params?.destinationSrcSenderHex,
+        destinationVaultAddress: params?.destinationVaultAddress,
+        destinationGatewayAddress: params?.destinationGatewayAddress,
+      }),
+    enabled: Boolean(enabled && params?.sourceChainId && params?.destChainId),
   });
 };
 
@@ -477,43 +561,6 @@ export const useDeleteRoutePolicy = () => {
     mutationFn: (id: string) => adminRepository.deleteRoutePolicy(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'route-policies'] });
-    },
-  });
-};
-
-export const useLayerZeroPolicies = (params?: { page?: number; limit?: number; sourceChainId?: string; destChainId?: string; activeOnly?: boolean }) => {
-  return useQuery({
-    queryKey: ['admin', 'layerzero-configs', params?.page, params?.limit, params?.sourceChainId, params?.destChainId, params?.activeOnly],
-    queryFn: () => adminRepository.getLayerZeroPolicies(params),
-  });
-};
-
-export const useCreateLayerZeroPolicy = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (data: any) => adminRepository.createLayerZeroPolicy(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'layerzero-configs'] });
-    },
-  });
-};
-
-export const useUpdateLayerZeroPolicy = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => adminRepository.updateLayerZeroPolicy(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'layerzero-configs'] });
-    },
-  });
-};
-
-export const useDeleteLayerZeroPolicy = () => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => adminRepository.deleteLayerZeroPolicy(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'layerzero-configs'] });
     },
   });
 };

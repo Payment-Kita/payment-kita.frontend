@@ -3,7 +3,8 @@ import {
   AdminStats,
   BridgeConfigPayload,
   LayerZeroConfigPayload,
-  LayerZeroPolicyPayload,
+  LayerZeroE2EConfigurePayload,
+  LayerZeroE2EStatusParams,
   CrosschainBulkAutoFixPayload,
   CrosschainBulkRecheckPayload,
   CrosschainAutoFixPayload,
@@ -194,6 +195,14 @@ export class AdminRepository {
     return this.dataSource.setLayerZeroConfig(data);
   }
 
+  async configureLayerZeroE2E(data: LayerZeroE2EConfigurePayload): Promise<any> {
+    return this.dataSource.configureLayerZeroE2E(data);
+  }
+
+  async getLayerZeroE2EStatus(params: LayerZeroE2EStatusParams): Promise<any> {
+    return this.dataSource.getLayerZeroE2EStatus(params);
+  }
+
   async getCrosschainOverview(params?: CrosschainOverviewParams): Promise<{ items: any[]; meta?: any }> {
     return this.dataSource.getCrosschainOverview(params);
   }
@@ -234,27 +243,11 @@ export class AdminRepository {
     return this.dataSource.deleteRoutePolicy(id);
   }
 
-  async getLayerZeroPolicies(params?: { page?: number; limit?: number; sourceChainId?: string; destChainId?: string; activeOnly?: boolean }): Promise<{ items: any[]; meta?: any }> {
-    return this.dataSource.getLayerZeroPolicies(params);
-  }
-
-  async createLayerZeroPolicy(data: LayerZeroPolicyPayload): Promise<any> {
-    return this.dataSource.createLayerZeroPolicy(data);
-  }
-
-  async updateLayerZeroPolicy(id: string, data: LayerZeroPolicyPayload): Promise<any> {
-    return this.dataSource.updateLayerZeroPolicy(id, data);
-  }
-
-  async deleteLayerZeroPolicy(id: string): Promise<void> {
-    return this.dataSource.deleteLayerZeroPolicy(id);
-  }
-
   async getRouteErrorDiagnostics(params: RouteErrorDiagnosticsParams): Promise<any> {
     return this.dataSource.getRouteErrorDiagnostics(params);
   }
 
-  async checkTokenPairSupport(params: { chainId: string; tokenIn: string; tokenOut: string }): Promise<{ exists: boolean; isDirect: boolean; path: string[] }> {
+  async checkTokenPairSupport(params: { chainId: string; tokenIn: string; tokenOut: string }): Promise<{ exists: boolean; isDirect: boolean; path: string[]; executable?: boolean; reasons?: string[]; swapRouterV3?: string; universalRouter?: string }> {
     return this.dataSource.checkTokenPairSupport(params);
   }
 

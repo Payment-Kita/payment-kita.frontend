@@ -4,7 +4,7 @@
  */
 import { paymentDataSource } from '../../data_source';
 import type { IPaymentRepository } from '../repository/payment_repository';
-import type { CreatePaymentRequest } from '../../model/request';
+import type { CreatePaymentRequest, PaymentPrivacyRecoveryRequest } from '../../model/request';
 
 class PaymentRepositoryImpl implements IPaymentRepository {
   async createPayment(input: CreatePaymentRequest) {
@@ -21,6 +21,22 @@ class PaymentRepositoryImpl implements IPaymentRepository {
 
   async getPaymentEvents(id: string) {
     return paymentDataSource.getEvents(id);
+  }
+
+  async getPaymentPrivacyStatus(id: string) {
+    return paymentDataSource.getPrivacyStatus(id);
+  }
+
+  async retryPrivacyForward(id: string, input?: PaymentPrivacyRecoveryRequest) {
+    return paymentDataSource.retryPrivacyForward(id, input);
+  }
+
+  async claimPrivacyEscrow(id: string, input?: PaymentPrivacyRecoveryRequest) {
+    return paymentDataSource.claimPrivacyEscrow(id, input);
+  }
+
+  async refundPrivacyEscrow(id: string, input?: PaymentPrivacyRecoveryRequest) {
+    return paymentDataSource.refundPrivacyEscrow(id, input);
   }
 }
 

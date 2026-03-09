@@ -142,7 +142,7 @@ export default async function LandingPage() {
             <h1 className="heading-display animate-fade-in-up mx-auto max-w-4xl">
               <img
                 src="/logo.png"
-                alt="Pay-Chain Logo"
+                alt="Payment-Kita Logo"
                 className="block mx-auto h-50 w-50 object-contain transition-transform duration-300 group-hover:scale-110"
               />
               <span className="block text-foreground mb-2 text-6xl">{t('common.brand')}</span>

@@ -6,7 +6,7 @@ export * from './Input';
 export * from './Modal';
 export * from './TokenIcon';
 export * from './Label';
-export * from './PayChainLogo';
+export * from './PaymentKitaLogo';
 export * from './WalletNetworkIcon';
 export * from './Tabs';
 export * from './ChainTokenIcon';

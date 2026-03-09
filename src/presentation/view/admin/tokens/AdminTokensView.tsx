@@ -270,16 +270,24 @@ export const AdminTokensView = () => {
             {pairCheckResult && (
               <div className="mt-8 pt-8 border-t border-white/10 animate-in fade-in zoom-in-95 duration-300">
                 {pairCheckResult.exists ? (
-                  <div className="bg-accent-green/5 border border-accent-green/20 rounded-2xl p-6">
+                  <div className={`rounded-2xl p-6 border ${pairCheckResult.executable ? "bg-accent-green/5 border-accent-green/20" : "bg-amber-500/5 border-amber-500/20"}`}>
                     <div className="flex items-start gap-4">
-                      <div className="p-3 bg-accent-green/20 rounded-xl">
-                        <CheckCircle2 className="w-6 h-6 text-accent-green" />
+                      <div className={`p-3 rounded-xl ${pairCheckResult.executable ? "bg-accent-green/20" : "bg-amber-500/20"}`}>
+                        <CheckCircle2 className={`w-6 h-6 ${pairCheckResult.executable ? "text-accent-green" : "text-amber-400"}`} />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
                           <div>
-                            <h3 className="text-lg font-bold text-accent-green">{t('admin.tokens_view.pair_check.result_supported', 'Route Found')}</h3>
-                            <p className="text-sm text-accent-green/70">{t('admin.tokens_view.pair_check.supported_desc', 'Swap route is available and active on-chain.')}</p>
+                            <h3 className={`text-lg font-bold ${pairCheckResult.executable ? "text-accent-green" : "text-amber-400"}`}>
+                              {pairCheckResult.executable
+                                ? t('admin.tokens_view.pair_check.result_supported', 'Route Ready')
+                                : t('admin.tokens_view.pair_check.result_registered_only', 'Route Registered (Not Ready)')}
+                            </h3>
+                            <p className={`text-sm ${pairCheckResult.executable ? "text-accent-green/70" : "text-amber-300/80"}`}>
+                              {pairCheckResult.executable
+                                ? t('admin.tokens_view.pair_check.supported_desc', 'Swap route is available and executable on-chain.')
+                                : t('admin.tokens_view.pair_check.not_executable_desc', 'Route mapping exists, but swap executor configuration is incomplete.')}
+                            </p>
                           </div>
                           <span className={`text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-widest ${pairCheckResult.isDirect ? 'bg-accent-green/20 text-accent-green' : 'bg-primary/20 text-primary'}`}>
                             {pairCheckResult.isDirect ? t('admin.tokens_view.pair_check.direct', 'Direct') : t('admin.tokens_view.pair_check.multi_hop', 'Multi-hop')}
@@ -318,6 +326,24 @@ export const AdminTokensView = () => {
                             })}
                           </div>
                         </div>
+
+                        {!pairCheckResult.executable && (
+                          <div className="mt-4 p-4 rounded-xl border border-amber-400/20 bg-amber-500/5">
+                            <div className="text-xs font-bold uppercase tracking-wider text-amber-300 mb-2">Runtime Readiness</div>
+                            <div className="text-xs text-amber-200/90 space-y-1">
+                              {(pairCheckResult.reasons || []).map((reason, idx) => (
+                                <div key={idx}>• {reason}</div>
+                              ))}
+                              {pairCheckResult.swapRouterV3 && (
+                                <div>swapRouterV3: {pairCheckResult.swapRouterV3}</div>
+                              )}
+                              {pairCheckResult.universalRouter && (
+                                <div>universalRouter: {pairCheckResult.universalRouter}</div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="mt-8 pt-6 border-t border-accent-green/10 flex flex-wrap gap-3">
                           <div className="w-full mb-1">
                             <span className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">{t('admin.tokens_view.pair_check.admin_actions', 'Admin Actions')}</span>

@@ -4,12 +4,14 @@
  */
 import { httpClient } from '@/core/network';
 import { API_ENDPOINTS } from '@/core/constants';
-import type { CreatePaymentRequest } from '../model/request';
+import type { CreatePaymentRequest, PaymentPrivacyRecoveryRequest } from '../model/request';
 import type {
   CreatePaymentResponse,
   PaymentResponse,
   PaymentsResponse,
   PaymentEventsResponse,
+  PaymentPrivacyStatusResponse,
+  PaymentPrivacyRecoveryTxResponse,
 } from '../model/response';
 
 class PaymentDataSource {
@@ -29,6 +31,22 @@ class PaymentDataSource {
 
   async getEvents(id: string) {
     return httpClient.get<PaymentEventsResponse>(API_ENDPOINTS.PAYMENT_EVENTS(id));
+  }
+
+  async getPrivacyStatus(id: string) {
+    return httpClient.get<PaymentPrivacyStatusResponse>(API_ENDPOINTS.PAYMENT_PRIVACY_STATUS(id));
+  }
+
+  async retryPrivacyForward(id: string, input?: PaymentPrivacyRecoveryRequest) {
+    return httpClient.post<PaymentPrivacyRecoveryTxResponse>(API_ENDPOINTS.PAYMENT_PRIVACY_RETRY(id), input ?? {});
+  }
+
+  async claimPrivacyEscrow(id: string, input?: PaymentPrivacyRecoveryRequest) {
+    return httpClient.post<PaymentPrivacyRecoveryTxResponse>(API_ENDPOINTS.PAYMENT_PRIVACY_CLAIM(id), input ?? {});
+  }
+
+  async refundPrivacyEscrow(id: string, input?: PaymentPrivacyRecoveryRequest) {
+    return httpClient.post<PaymentPrivacyRecoveryTxResponse>(API_ENDPOINTS.PAYMENT_PRIVACY_REFUND(id), input ?? {});
   }
 }
 

@@ -40,6 +40,30 @@ export interface PaymentEvent {
   createdAt: string;
 }
 
+export interface PaymentPrivacyStatus {
+  paymentId: string;
+  stage: string;
+  isPrivacyCandidate: boolean;
+  signals?: string[];
+  reason?: string;
+}
+
+export type PaymentPrivacyRecoveryAction = 'retry' | 'claim' | 'refund';
+
+export interface PaymentPrivacyRecoveryTx {
+  action: PaymentPrivacyRecoveryAction;
+  paymentId: string;
+  onchainPaymentId: string;
+  stage: string;
+  chainId: string;
+  contractAddress: string;
+  method: string;
+  calldata: string;
+  value: string;
+  signals?: string[];
+  reason?: string;
+}
+
 // Chain entity
 export interface Chain {
   id: number;

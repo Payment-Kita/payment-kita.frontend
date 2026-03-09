@@ -6,7 +6,7 @@ import { Button, Card, Input } from '@/presentation/components/atoms';
 import { ChainSelector } from '@/presentation/components/organisms';
 import { useTranslation } from '@/presentation/hooks';
 import { useAdminCrosschainConfigs } from './useAdminCrosschainConfigs';
-import { normalizeCrosschainErrorMessage, recommendActionByErrorCode } from './crosschainErrorHints';
+import { isQuoteSchemaMismatchMessage, normalizeCrosschainErrorMessage, recommendActionByErrorCode } from './crosschainErrorHints';
 
 const statusClass = (status: string) => {
   const normalized = String(status || '').toUpperCase();
@@ -303,6 +303,9 @@ export const AdminCrosschainConfigsView = () => {
           <p className="text-sm text-muted">{t('admin.crosschain_configs_view.preflight_empty')}</p>
         ) : (
           <div className="space-y-3">
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
+              {t('admin.crosschain_configs_view.preflight_quote_pipeline_hint')}
+            </div>
             {!isSingleBridge && (
               <div className="lg:hidden flex items-center justify-end gap-2">
                 <Button
@@ -341,6 +344,11 @@ export const AdminCrosschainConfigsView = () => {
               {(state.preflight.bridges || []).map((bridge: any) => {
                 const bridgeKey = `${bridge.bridgeType}-${bridge.bridgeName}`;
                 const mobileExpanded = isSingleBridge || expandedBridgeKeys.has(bridgeKey);
+                const schemaMismatch =
+                  Boolean(bridge?.quoteSchemaMismatch) ||
+                  isQuoteSchemaMismatchMessage(String(bridge?.quoteFailureReason || bridge?.errorMessage || ''));
+                const quotePathUsed = String(bridge?.quotePathUsed || '').trim();
+                const quoteFailureReason = String(bridge?.quoteFailureReason || '').trim();
                 return (
                   <div key={bridgeKey} className="rounded-xl border border-white/10 bg-white/5 p-3 sm:p-4 space-y-2">
                     {(() => {
@@ -395,6 +403,10 @@ export const AdminCrosschainConfigsView = () => {
                         <span className={`inline-flex px-2 py-1 rounded-lg border text-xs ${preflightCheckClass(Boolean(bridge?.checks?.feeQuoteHealthy))}`}>
                           feeQuoteHealthy: {boolText(Boolean(bridge?.checks?.feeQuoteHealthy), t('admin.crosschain_configs_view.yes'), t('admin.crosschain_configs_view.no'))}
                         </span>
+                        <span className={`inline-flex px-2 py-1 rounded-lg border text-xs ${preflightCheckClass(!schemaMismatch)}`}>
+                          {t('admin.crosschain_configs_view.preflight_quote_schema_mismatch')}:{' '}
+                          {boolText(schemaMismatch, t('admin.crosschain_configs_view.yes'), t('admin.crosschain_configs_view.no'))}
+                        </span>
                       </div>
                       <div className="pt-1">
                         <span className={`inline-flex px-2 py-1 rounded-lg border text-xs ${bridge?.ready ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
@@ -409,9 +421,19 @@ export const AdminCrosschainConfigsView = () => {
                       {bridge.errorMessage && (
                         <p className="text-xs text-red-300/90">{normalizeCrosschainErrorMessage(bridge.errorMessage)}</p>
                       )}
+                      {quotePathUsed && (
+                        <p className="text-xs text-cyan-300/90">
+                          quote path: <span className="font-mono">{quotePathUsed}</span>
+                        </p>
+                      )}
+                      {quoteFailureReason && (
+                        <p className="text-xs text-red-300/90">
+                          quote reason: {normalizeCrosschainErrorMessage(quoteFailureReason)}
+                        </p>
+                      )}
                       {bridge.errorCode && recommendActionByErrorCode(String(bridge.errorCode)) && (
                         <p className="text-xs text-amber-300/90">
-                          Aksi disarankan: {recommendActionByErrorCode(String(bridge.errorCode))}
+                          {t('admin.crosschain_configs_view.recommended_action_label')}: {recommendActionByErrorCode(String(bridge.errorCode))}
                         </p>
                       )}
                       <div className="pt-1">
@@ -456,6 +478,62 @@ export const AdminCrosschainConfigsView = () => {
           </div>
         )}
       </Card>
+
+      {state.sourceChainId && state.destChainId && (
+        <Card className="p-5 bg-white/5 border-white/10 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-base font-semibold text-foreground">{t('admin.crosschain_configs_view.layerzero_e2e_title')}</h3>
+            <div className="flex items-center gap-2">
+              <span
+                className={`inline-flex px-2 py-1 rounded-full border text-xs font-medium ${
+                  state.layerZeroE2EStatus?.ready ? statusClass('READY') : statusClass('ERROR')
+                }`}
+              >
+                {state.layerZeroE2EStatus?.ready ? t('admin.crosschain_configs_view.success_status') : t('admin.crosschain_configs_view.error_status')}
+              </span>
+              <Button
+                size="sm"
+                variant={state.layerZeroE2EStatus?.ready ? 'ghost' : 'primary'}
+                onClick={() => actions.configureLayerZeroE2ESelected()}
+                disabled={state.isPending || state.isLayerZeroE2EStatusLoading}
+              >
+                {state.layerZeroE2EStatus?.ready
+                  ? t('admin.crosschain_configs_view.layerzero_e2e_reconfigure')
+                  : t('admin.crosschain_configs_view.layerzero_e2e_fix_now')}
+              </Button>
+            </div>
+          </div>
+          {state.isLayerZeroE2EStatusLoading ? (
+            <p className="text-sm text-muted">{t('admin.crosschain_configs_view.preflight_loading')}</p>
+          ) : !state.layerZeroE2EStatus ? (
+            <p className="text-sm text-muted">{t('admin.crosschain_configs_view.layerzero_e2e_empty')}</p>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                {Object.entries(state.layerZeroE2EStatus?.checks || {}).map(([key, value]) => (
+                  <span
+                    key={key}
+                    className={`inline-flex px-2 py-1 rounded-lg border text-xs ${preflightCheckClass(Boolean(value))}`}
+                  >
+                    {key}: {boolText(Boolean(value), t('admin.crosschain_configs_view.yes'), t('admin.crosschain_configs_view.no'))}
+                  </span>
+                ))}
+              </div>
+              {Array.isArray(state.layerZeroE2EStatus?.issues) && state.layerZeroE2EStatus.issues.length > 0 && (
+                <div className="space-y-1">
+                  {state.layerZeroE2EStatus.issues.map((issue: any, idx: number) => (
+                    <p key={`lz-issue-${idx}`} className="text-xs text-red-300/90">
+                      {typeof issue === 'string'
+                        ? issue
+                        : `${String(issue?.code || 'ISSUE')}: ${String(issue?.message || '')}`}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </Card>
+      )}
 
       <Card className="p-5 bg-white/5 border-white/10 space-y-4">
         <h3 className="text-base font-semibold text-foreground">{t('admin.crosschain_configs_view.manual_title')}</h3>
@@ -645,6 +723,53 @@ export const AdminCrosschainConfigsView = () => {
                 </p>
               )}
             </div>
+            <Input
+              label="CCIP Source Chain Selector (trust)"
+              placeholder="source selector uint64"
+              value={state.manualCCIPSourceChainSelector}
+              onChange={(e) => actions.setManualCCIPSourceChainSelector(e.target.value)}
+              disabled={state.manualBridgeType !== '1' || state.manualCurrentStep !== 3}
+            />
+            <Input
+              label="CCIP Destination Gas Limit"
+              placeholder="200000"
+              value={state.manualCCIPDestinationGasLimit}
+              onChange={(e) => actions.setManualCCIPDestinationGasLimit(e.target.value)}
+              disabled={state.manualBridgeType !== '1' || state.manualCurrentStep !== 3}
+            />
+            <Input
+              label="CCIP Extra Args (hex)"
+              placeholder="0x"
+              value={state.manualCCIPDestinationExtraArgsHex}
+              onChange={(e) => actions.setManualCCIPDestinationExtraArgsHex(e.target.value)}
+              disabled={state.manualBridgeType !== '1' || state.manualCurrentStep !== 3}
+            />
+            <Input
+              label="CCIP Fee Token Address"
+              placeholder="0x0000000000000000000000000000000000000000"
+              value={state.manualCCIPDestinationFeeTokenAddress}
+              onChange={(e) => actions.setManualCCIPDestinationFeeTokenAddress(e.target.value)}
+              disabled={state.manualBridgeType !== '1' || state.manualCurrentStep !== 3}
+            />
+            <Input
+              label="CCIP Trusted Sender (bytes32)"
+              placeholder="0x000000000000000000000000..."
+              value={state.manualCCIPTrustedSenderHex}
+              onChange={(e) => actions.setManualCCIPTrustedSenderHex(e.target.value)}
+              disabled={state.manualBridgeType !== '1' || state.manualCurrentStep !== 3}
+            />
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground/80 ml-1">Allow Source Chain</label>
+              <select
+                className="h-11 rounded-full bg-white/5 border border-white/10 px-3 text-sm w-full"
+                value={state.manualCCIPAllowSourceChain ? 'true' : 'false'}
+                onChange={(e) => actions.setManualCCIPAllowSourceChain(String(e.target.value) === 'true')}
+                disabled={state.manualBridgeType !== '1' || state.manualCurrentStep !== 3}
+              >
+                <option value="true">true</option>
+                <option value="false">false</option>
+              </select>
+            </div>
           </div>
         )}
         {isManualCCIP && (
@@ -656,11 +781,50 @@ export const AdminCrosschainConfigsView = () => {
         )}
         {isManualLayerZero && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground/80 ml-1">LayerZero Source Sender</label>
+              <select
+                className="h-11 rounded-full bg-white/5 border border-white/10 px-3 text-sm w-full"
+                value={state.manualLayerZeroSenderAddress}
+                onChange={(e) => actions.setManualLayerZeroSenderAddress(e.target.value)}
+                disabled={!state.manualSourceChainId || state.manualBridgeType !== '2' || state.manualCurrentStep !== 3}
+              >
+                <option value="">{t('admin.crosschain_configs_view.manual_source_adapter')}</option>
+                {(state.manualSourceAdapterContracts || []).map((contract: any) => (
+                  <option key={contract.id} value={contract.contractAddress}>
+                    {contract.name} ({contract.contractAddress})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground/80 ml-1">LayerZero Destination Receiver</label>
+              <select
+                className="h-11 rounded-full bg-white/5 border border-white/10 px-3 text-sm w-full"
+                value={state.manualLayerZeroReceiverAddress}
+                onChange={(e) => actions.setManualLayerZeroReceiverAddress(e.target.value)}
+                disabled={!state.manualDestChainId || state.manualBridgeType !== '2' || state.manualCurrentStep !== 3}
+              >
+                <option value="">{t('admin.crosschain_configs_view.select_destination_layerzero_contract')}</option>
+                {(state.manualDestLayerZeroContracts || []).map((contract: any) => (
+                  <option key={contract.id} value={contract.contractAddress}>
+                    {contract.name} ({contract.contractAddress})
+                  </option>
+                ))}
+              </select>
+            </div>
             <Input
               label={t('admin.crosschain_configs_view.manual_layerzero_dst_eid')}
               placeholder="30110"
               value={state.manualLayerZeroDstEid}
               onChange={(e) => actions.setManualLayerZeroDstEid(e.target.value)}
+              disabled={state.manualBridgeType !== '2' || state.manualCurrentStep !== 3}
+            />
+            <Input
+              label="LayerZero Source EID"
+              placeholder="30184"
+              value={state.manualLayerZeroSrcEid}
+              onChange={(e) => actions.setManualLayerZeroSrcEid(e.target.value)}
               disabled={state.manualBridgeType !== '2' || state.manualCurrentStep !== 3}
             />
             <div className="space-y-1.5">
@@ -834,6 +998,11 @@ export const AdminCrosschainConfigsView = () => {
               ) : (
                 state.routes.map((route: any) => {
                   const issueCount = Array.isArray(route.issues) ? route.issues.length : 0;
+                  const routeQuotePathUsed = String(route.quotePathUsed || '').trim();
+                  const routeQuoteFailureReason = String(route.quoteFailureReason || '').trim();
+                  const routeQuoteSchemaMismatch =
+                    Boolean(route.quoteSchemaMismatch) ||
+                    isQuoteSchemaMismatchMessage(routeQuoteFailureReason);
                   return (
                     <tr key={route.routeKey} className="border-t border-white/10 align-top">
                       <td className="px-4 py-3 text-sm">
@@ -846,7 +1015,7 @@ export const AdminCrosschainConfigsView = () => {
                                 {normalizeCrosschainErrorMessage(issue.message)}
                                 {recommendActionByErrorCode(String(issue.code || '')) && (
                                   <span className="block text-amber-300/90">
-                                    Aksi: {recommendActionByErrorCode(String(issue.code || ''))}
+                                    {t('admin.crosschain_configs_view.issue_action_label')}: {recommendActionByErrorCode(String(issue.code || ''))}
                                   </span>
                                 )}
                               </li>
@@ -869,6 +1038,19 @@ export const AdminCrosschainConfigsView = () => {
                       </td>
                       <td className="px-4 py-3 text-sm text-foreground">
                         {boolText(route.feeQuoteHealthy, t('admin.crosschain_configs_view.yes'), t('admin.crosschain_configs_view.no'))}
+                        {routeQuoteSchemaMismatch && (
+                          <p className="text-[11px] mt-1 text-amber-300/90">schema mismatch: yes</p>
+                        )}
+                        {routeQuotePathUsed && (
+                          <p className="text-[11px] mt-1 text-cyan-300/90">
+                            path: <span className="font-mono">{routeQuotePathUsed}</span>
+                          </p>
+                        )}
+                        {routeQuoteFailureReason && (
+                          <p className="text-[11px] mt-1 text-red-300/90">
+                            reason: {normalizeCrosschainErrorMessage(routeQuoteFailureReason)}
+                          </p>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-sm text-foreground">
                         {issueCount || t('admin.crosschain_configs_view.no_issues')}
