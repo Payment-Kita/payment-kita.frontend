@@ -143,7 +143,7 @@
 </script>
 
 <svelte:head>
-    <title>Pay - Pay-Chain</title>
+    <title>Pay - Payment-Kita</title>
 </svelte:head>
 
 <div
@@ -354,7 +354,7 @@
 
                 <!-- Footer -->
                 <div class="border-t border-gray-800 p-4 text-center">
-                    <p class="text-xs text-gray-500">Powered by Pay-Chain</p>
+                    <p class="text-xs text-gray-500">Powered by Payment-Kita</p>
                 </div>
             </div>
         {/if}

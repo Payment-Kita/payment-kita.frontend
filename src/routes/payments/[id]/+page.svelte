@@ -68,7 +68,7 @@
 </script>
 
 <svelte:head>
-  <title>Payment Details | Pay-Chain</title>
+  <title>Payment Details | Payment-Kita</title>
 </svelte:head>
 
 <div class="max-w-4xl mx-auto px-4 py-8">

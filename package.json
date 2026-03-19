@@ -1,5 +1,5 @@
 {
-    "name": "pay-chain-frontend",
+    "name": "payment-kita-frontend",
     "version": "0.1.0",
     "private": true,
     "scripts": {

@@ -12,7 +12,7 @@ interface WalletState {
     isConnecting: boolean;
 }
 
-const STORAGE_KEY = 'pay-chain-wallets';
+const STORAGE_KEY = 'payment-kita-wallets';
 
 function createWalletStore() {
     // Load from localStorage

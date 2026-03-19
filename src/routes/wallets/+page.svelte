@@ -44,7 +44,7 @@
       const chainId = await window.ethereum.request({ method: 'eth_chainId' });
 
       // Create message to sign
-      const message = `Connect wallet to Pay-Chain\nAddress: ${address}\nTimestamp: ${Date.now()}`;
+      const message = `Connect wallet to Payment-Kita\nAddress: ${address}\nTimestamp: ${Date.now()}`;
 
       // Sign message
       const signature = await window.ethereum.request({
@@ -79,7 +79,7 @@
 </script>
 
 <svelte:head>
-  <title>Wallets - Pay-Chain</title>
+  <title>Wallets - Payment-Kita</title>
 </svelte:head>
 
 <div class="bg-gray-950 min-h-screen">

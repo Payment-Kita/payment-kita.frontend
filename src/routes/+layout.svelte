@@ -45,7 +45,7 @@
                 <div class="relative">
                   <img
                     src="/logo.png"
-                    alt="Pay-Chain Logo"
+                    alt="Payment-Kita Logo"
                     class="h-9 w-9 object-contain transition-transform duration-300 group-hover:scale-110"
                   />
                   <div
@@ -53,7 +53,7 @@
                   ></div>
                 </div>
                 <span class="text-white font-bold text-xl tracking-tight"
-                  >Pay-Chain</span
+                  >Payment-Kita</span
                 >
               </a>
             </div>
@@ -128,8 +128,8 @@
             <!-- Brand column -->
             <div class="md:col-span-2">
               <a href="/" class="flex items-center gap-3 mb-4">
-                <img src="/logo.png" alt="Pay-Chain" class="h-8 w-8" />
-                <span class="text-white font-bold text-lg">Pay-Chain</span>
+                <img src="/logo.png" alt="Payment-Kita" class="h-8 w-8" />
+                <span class="text-white font-bold text-lg">Payment-Kita</span>
               </a>
               <p class="text-white/50 text-sm max-w-md">
                 Cross-chain stablecoin payment gateway. Accept payments across
@@ -199,7 +199,7 @@
             class="flex flex-col md:flex-row justify-between items-center gap-4"
           >
             <p class="text-white/40 text-sm">
-              © 2026 Pay-Chain. All rights reserved.
+              © 2026 Payment-Kita. All rights reserved.
             </p>
             <div class="flex items-center gap-4">
               <a

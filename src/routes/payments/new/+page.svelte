@@ -120,7 +120,7 @@
 </script>
 
 <svelte:head>
-  <title>New Payment - Pay-Chain</title>
+  <title>New Payment - Payment-Kita</title>
 </svelte:head>
 
 <div class="bg-gray-950 min-h-screen">

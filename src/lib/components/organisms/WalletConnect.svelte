@@ -34,7 +34,7 @@
       const chainId = await window.ethereum.request({ method: 'eth_chainId' });
       
       // Sign message for verification
-      const message = `Welcome to Pay-Chain!\n\nSign this message to verify wallet ownership.\n\nTimestamp: ${Date.now()}`;
+      const message = `Welcome to Payment-Kita!\n\nSign this message to verify wallet ownership.\n\nTimestamp: ${Date.now()}`;
       const signature = await window.ethereum.request({
         method: 'personal_sign',
         params: [message, address],

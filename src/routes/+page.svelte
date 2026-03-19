@@ -44,7 +44,7 @@
 </script>
 
 <svelte:head>
-  <title>Pay-Chain - Cross-Chain Stablecoin Payments</title>
+  <title>Payment-Kita - Cross-Chain Stablecoin Payments</title>
 </svelte:head>
 
 <!-- Hero Section -->
@@ -120,7 +120,7 @@
 <div class="py-24 lg:py-32">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
     <div class="text-center mb-16">
-      <h2 class="text-3xl md:text-4xl font-bold text-white">Why Pay-Chain?</h2>
+      <h2 class="text-3xl md:text-4xl font-bold text-white">Why Payment-Kita?</h2>
       <p class="mt-4 text-white/50 text-lg">Built for the multi-chain future</p>
     </div>
 

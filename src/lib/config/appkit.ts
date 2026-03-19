@@ -6,10 +6,10 @@ import { mainnet, polygon, optimism, arbitrum, base, sepolia } from '@reown/appk
 export const projectId = 'YOUR_PROJECT_ID';
 
 const metadata = {
-    name: 'Pay-Chain',
+    name: 'Payment-Kita',
     description: 'Cross-chain stablecoin payment gateway',
-    url: 'https://pay-chain.com', // origin must match your domain & subdomain
-    icons: ['https://pay-chain.com/logo.png']
+    url: 'https://payment-kita.com', // origin must match your domain & subdomain
+    icons: ['https://payment-kita.com/logo.png']
 };
 
 export const networks = [mainnet, polygon, optimism, arbitrum, base, sepolia];

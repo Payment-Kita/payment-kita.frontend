@@ -41,7 +41,7 @@
 </script>
 
 <svelte:head>
-  <title>Settings | Pay-Chain</title>
+  <title>Settings | Payment-Kita</title>
 </svelte:head>
 
 <div class="max-w-2xl mx-auto px-4 py-8">

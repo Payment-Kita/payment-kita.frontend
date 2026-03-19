@@ -59,7 +59,7 @@
 </script>
 
 <svelte:head>
-  <title>Payment Requests - Pay-Chain</title>
+  <title>Payment Requests - Payment-Kita</title>
 </svelte:head>
 
 <div class="min-h-screen bg-gray-950 p-6">

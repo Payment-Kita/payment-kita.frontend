@@ -94,7 +94,7 @@
 </script>
 
 <svelte:head>
-  <title>Become a Merchant | Pay-Chain</title>
+  <title>Become a Merchant | Payment-Kita</title>
 </svelte:head>
 
 <div class="max-w-2xl mx-auto px-4 py-8">

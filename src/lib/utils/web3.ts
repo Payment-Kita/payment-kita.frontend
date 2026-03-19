@@ -145,7 +145,7 @@ export function createVerificationMessage(nonce?: string): string {
     const timestamp = Date.now();
     const nonceStr = nonce || Math.random().toString(36).substring(2);
 
-    return `Welcome to Pay-Chain!
+    return `Welcome to Payment-Kita!
 
 Sign this message to verify wallet ownership.
 

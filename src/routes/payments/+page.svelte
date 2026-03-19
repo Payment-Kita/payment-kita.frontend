@@ -37,7 +37,7 @@
 </script>
 
 <svelte:head>
-  <title>Payments - Pay-Chain</title>
+  <title>Payments - Payment-Kita</title>
 </svelte:head>
 
 <div class="bg-gray-950 min-h-screen">

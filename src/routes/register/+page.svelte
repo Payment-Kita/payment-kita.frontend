@@ -74,7 +74,7 @@
       walletChainId = `eip155:${parseInt(chainId, 16)}`;
 
       // Create message to sign
-      const message = `Sign this message to verify your wallet for Pay-Chain registration.\n\nWallet: ${walletAddress}\nTimestamp: ${Date.now()}`;
+      const message = `Sign this message to verify your wallet for Payment-Kita registration.\n\nWallet: ${walletAddress}\nTimestamp: ${Date.now()}`;
 
       // Request signature
       walletSignature = await window.ethereum.request({
@@ -103,7 +103,7 @@
 </script>
 
 <svelte:head>
-  <title>Register - Pay-Chain</title>
+  <title>Register - Payment-Kita</title>
 </svelte:head>
 
 <div

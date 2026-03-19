@@ -7,7 +7,7 @@
 </script>
 
 <svelte:head>
-  <title>Login - Pay-Chain</title>
+  <title>Login - Payment-Kita</title>
 </svelte:head>
 
 <div

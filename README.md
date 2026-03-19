@@ -1,4 +1,4 @@
-# Pay-Chain Frontend
+# Payment-Kita Frontend
 
 Cross-chain stablecoin payment gateway dashboard built with Svelte, TypeScript, and Tailwind CSS.
 
