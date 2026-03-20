@@ -35,7 +35,7 @@ export default function Navbar({ mode = 'auto' }: NavbarProps) {
   const publicNav = [
     { href: '/', label: 'Home' },
     { href: '/app', label: 'App' },
-    { href: '/about', label: 'About' },
+    { href: '/docs', label: 'Docs' },
     { href: '/team', label: 'Team' },
   ];
 
