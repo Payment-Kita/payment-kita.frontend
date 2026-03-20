@@ -416,9 +416,9 @@ export const useAdminCrosschainConfigs = () => {
     ''
   ).trim();
   const statusDestinationReceiverAddress = String(
+    bytes32ToAddress(String(selectedOnchainStatusQuery.data?.stargatePeer || '')) ||
     selectedDestStargateContracts?.[0]?.contractAddress ||
     manualStargateReceiverAddress ||
-    bytes32ToAddress(String(selectedOnchainStatusQuery.data?.stargatePeer || '')) ||
     ''
   ).trim();
 
@@ -689,12 +689,17 @@ export const useAdminCrosschainConfigs = () => {
       setManualStargateSenderAddress('');
       return;
     }
-    const sender = String(manualAdapterAddress || manualSourceAdapterContracts?.[0]?.contractAddress || '').trim();
+    const sender = String(
+      manualOnchainStatusQuery.data?.adapterType2 ||
+      manualAdapterAddress ||
+      manualSourceAdapterContracts?.[0]?.contractAddress ||
+      ''
+    ).trim();
     if (!sender) return;
     if (String(manualStargateSenderAddress || '').toLowerCase() !== sender.toLowerCase()) {
       setManualStargateSenderAddress(sender);
     }
-  }, [manualBridgeType, manualSourceChainId, manualAdapterAddress, manualSourceAdapterContracts, manualStargateSenderAddress]);
+  }, [manualBridgeType, manualSourceChainId, manualAdapterAddress, manualSourceAdapterContracts, manualStargateSenderAddress, manualOnchainStatusQuery.data?.adapterType2]);
 
   useEffect(() => {
     if (manualBridgeType !== '2') return;
@@ -702,12 +707,16 @@ export const useAdminCrosschainConfigs = () => {
       setManualStargateReceiverAddress('');
       return;
     }
-    const receiver = String(manualDestStargateContracts?.[0]?.contractAddress || '').trim();
+    const receiver = String(
+      bytes32ToAddress(String(manualOnchainStatusQuery.data?.stargatePeer || '')) ||
+      manualDestStargateContracts?.[0]?.contractAddress ||
+      ''
+    ).trim();
     if (!receiver) return;
     if (String(manualStargateReceiverAddress || '').toLowerCase() !== receiver.toLowerCase()) {
       setManualStargateReceiverAddress(receiver);
     }
-  }, [manualBridgeType, manualDestChainId, manualDestStargateContracts, manualStargateReceiverAddress]);
+  }, [manualBridgeType, manualDestChainId, manualDestStargateContracts, manualStargateReceiverAddress, manualOnchainStatusQuery.data?.stargatePeer]);
 
   useEffect(() => {
     if (!manualSourceChainId) {
@@ -1068,7 +1077,11 @@ export const useAdminCrosschainConfigs = () => {
         setManualCCIPTrustedSenderHex(addressToPaddedBytesHex(firstSourceAddress));
       }
     } else if (normalizedBridgeType === '2') {
-      const firstDestinationAddress = String(destContracts?.[0]?.contractAddress || '');
+      const firstDestinationAddress = String(
+        statusDestinationReceiverAddress ||
+        destContracts?.[0]?.contractAddress ||
+        ''
+      );
       if (firstDestinationAddress) {
         setManualStargateReceiverAddress(firstDestinationAddress);
         setManualStargatePeerHex(addressToPaddedBytesHex(firstDestinationAddress));
@@ -1176,8 +1189,16 @@ export const useAdminCrosschainConfigs = () => {
           });
           toast.success(t('admin.crosschain_configs_view.toasts.manual_ccip_success'));
         } else if (normalizedBridgeType === '2') {
-          const senderAddress = String(sourceContracts?.[0]?.contractAddress || '');
-          const destinationAddress = String(destContracts?.[0]?.contractAddress || '');
+          const senderAddress = String(
+            statusSourceSenderAddress ||
+            sourceContracts?.[0]?.contractAddress ||
+            ''
+          );
+          const destinationAddress = String(
+            statusDestinationReceiverAddress ||
+            destContracts?.[0]?.contractAddress ||
+            ''
+          );
           const peerHex = destinationAddress ? addressToPaddedBytesHex(destinationAddress) : '';
           const selectedDestChain = chains.find((item: any) => String(item?.id || '') === String(selectedDest));
           const selectedSourceChain = chains.find((item: any) => String(item?.id || '') === String(selectedSource));
