@@ -15,7 +15,7 @@ import type {
   IWalletRepository,
   IMerchantRepository,
 } from '../repository/common_repository';
-import type { ConnectWalletRequest, ApplyMerchantRequest, CreatePaymentRequestRequest } from '../../model/request';
+import type { ConnectWalletRequest, ApplyMerchantRequest, CreatePaymentRequestRequest, MerchantSettlementProfileRequest } from '../../model/request';
 
 // ============== Chain Repository ==============
 class ChainRepositoryImpl implements IChainRepository {
@@ -76,6 +76,14 @@ class MerchantRepositoryImpl implements IMerchantRepository {
 
   async updateSettings(input: { callbackUrl: string; webhookIsActive: boolean }) {
     return merchantDataSource.updateSettings(input);
+  }
+
+  async getSettlementProfile() {
+    return merchantDataSource.getSettlementProfile();
+  }
+
+  async updateSettlementProfile(input: MerchantSettlementProfileRequest) {
+    return merchantDataSource.updateSettlementProfile(input);
   }
 }
 

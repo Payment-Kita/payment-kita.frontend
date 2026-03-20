@@ -9,6 +9,7 @@ import type {
   ConnectWalletRequest,
   ApplyMerchantRequest,
   CreatePaymentRequestRequest,
+  MerchantSettlementProfileRequest,
 } from '../model/request';
 import type {
   ChainsResponse,
@@ -19,6 +20,7 @@ import type {
   MessageResponse,
   PaymentRequestResponse,
   PaymentRequestsResponse,
+  MerchantSettlementProfileResponse,
 } from '../model/response';
 import type { Merchant } from '../model/entity';
 
@@ -81,6 +83,14 @@ class MerchantDataSource {
 
   async updateSettings(request: { callbackUrl: string; webhookIsActive: boolean }) {
     return httpClient.patch<Merchant>(API_ENDPOINTS.MERCHANT_UPDATE_SETTINGS, request);
+  }
+
+  async getSettlementProfile() {
+    return httpClient.get<MerchantSettlementProfileResponse>(API_ENDPOINTS.MERCHANT_SETTLEMENT_PROFILE);
+  }
+
+  async updateSettlementProfile(request: MerchantSettlementProfileRequest) {
+    return httpClient.put<MerchantSettlementProfileResponse>(API_ENDPOINTS.MERCHANT_SETTLEMENT_PROFILE, request);
   }
 }
 

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useAdminStats } from '@/data/usecase/useAdmin';
 import { Card, Badge, Button } from '@/presentation/components/atoms';
 import { StatCard } from '@/presentation/components/molecules';
@@ -63,6 +64,7 @@ export function AdminDashboardView() {
       bg: 'bg-warning/5'
     },
   ];
+  const legacySummary = stats?.legacyEndpointObservability;
 
   return (
     <div className="space-y-12 animate-fade-in pb-20">
@@ -91,6 +93,27 @@ export function AdminDashboardView() {
           />
         ))}
       </div>
+
+      {!!legacySummary && (
+        <Card className="p-6 rounded-[2rem] bg-warning/5 border-warning/20">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-warning">Legacy Runtime</p>
+              <h3 className="text-2xl font-black tracking-tight">Deprecation Observability</h3>
+              <p className="text-sm text-muted">
+                {legacySummary.total_hits} legacy hits across {legacySummary.tracked_endpoints} tracked endpoint families.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Badge variant="warning">{legacySummary.tracked_endpoints} tracked</Badge>
+              <Badge variant="outline">{legacySummary.total_hits} hits</Badge>
+              <Link href="/admin/diagnostics/legacy-endpoints">
+                <Button variant="outline" className="rounded-xl h-9 px-4">Open Diagnostics</Button>
+              </Link>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Featured Insights Section */}
       <div className="grid lg:grid-cols-3 gap-8 pt-8">

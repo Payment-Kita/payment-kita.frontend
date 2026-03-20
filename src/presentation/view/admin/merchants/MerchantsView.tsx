@@ -1,8 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { useAdminMerchants } from './useAdminMerchants';
-import { Card, Button } from '@/presentation/components/atoms';
-import { CheckCircle, XCircle, Store, AlertCircle, Search, Loader2, LayoutGrid } from 'lucide-react';
+import { Card, Button, Tabs } from '@/presentation/components/atoms';
+import { CheckCircle, XCircle, Store, AlertCircle, Search, Loader2, LayoutGrid, Settings2, Download } from 'lucide-react';
 import { useTranslation } from '@/presentation/hooks';
 
 export function MerchantsView() {
@@ -10,7 +11,9 @@ export function MerchantsView() {
   const { state, actions } = useAdminMerchants();
   const {
     searchTerm,
+    settlementGaps,
     filteredMerchants,
+    settlementFilter,
     isLoading,
     isUpdating,
     isSearching
@@ -24,6 +27,12 @@ export function MerchantsView() {
     if (normalized === 'rejected') return t('admin.merchants_view.status.rejected');
     if (normalized === 'suspended') return t('admin.merchants_view.status.suspended');
     return status;
+  };
+
+  const merchantCounts = {
+    all: state.merchants?.length ?? 0,
+    configured: state.merchants?.filter((merchant: any) => merchant.settlementProfileConfigured).length ?? 0,
+    missing: state.merchants?.filter((merchant: any) => !merchant.settlementProfileConfigured).length ?? 0,
   };
 
   if (isLoading && (!filteredMerchants || filteredMerchants.length === 0)) {
@@ -42,23 +51,52 @@ export function MerchantsView() {
           <h1 className="text-2xl font-bold text-foreground">{t('admin.merchants_view.title')}</h1>
           <p className="text-sm text-muted">{t('admin.merchants_view.subtitle')}</p>
         </div>
-        <div className="relative">
-          <input
-            type="text"
-            placeholder={t('admin.merchants_view.search_placeholder')}
-            className="pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-full text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 w-full md:w-64 transition-all text-sm"
-            value={searchTerm}
-            onChange={(e) => actions.setSearchTerm(e.target.value)}
-          />
-          <div className="absolute left-3 top-2.5 text-muted">
-            {isSearching ? (
-              <Loader2 className="w-4 h-4 animate-spin text-primary" />
-            ) : (
-              <Search className="w-4 h-4" />
-            )}
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder={t('admin.merchants_view.search_placeholder')}
+              className="pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-full text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 w-full md:w-64 transition-all text-sm"
+              value={searchTerm}
+              onChange={(e) => actions.setSearchTerm(e.target.value)}
+            />
+            <div className="absolute left-3 top-2.5 text-muted">
+              {isSearching ? (
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+              ) : (
+                <Search className="w-4 h-4" />
+              )}
+            </div>
           </div>
+          <Button
+            variant="outline"
+            className="rounded-2xl"
+            onClick={actions.exportSettlementGapCsv}
+            disabled={!settlementGaps?.merchants?.length}
+          >
+            <Download className="w-4 h-4" />
+            Export Missing CSV
+          </Button>
         </div>
       </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="bg-white/5 border-white/10 rounded-2xl">
+          <p className="text-xs uppercase tracking-[0.2em] text-muted font-black">Settlement Profiles Missing</p>
+          <p className="mt-2 text-3xl font-black text-foreground">{settlementGaps?.total_missing ?? 0}</p>
+          <p className="mt-2 text-sm text-muted">Merchants that still need a dedicated settlement profile row.</p>
+        </Card>
+      </div>
+
+      <Tabs
+        activeTab={settlementFilter}
+        onChange={(value) => actions.setSettlementFilter(value as 'all' | 'configured' | 'missing')}
+        tabs={[
+          { id: 'all', label: 'All', count: merchantCounts.all },
+          { id: 'configured', label: 'Configured', count: merchantCounts.configured },
+          { id: 'missing', label: 'Missing', count: merchantCounts.missing },
+        ]}
+      />
 
       <div className="grid gap-4">
         {filteredMerchants.length === 0 ? (
@@ -108,6 +146,13 @@ export function MerchantsView() {
                      <AlertCircle className="w-3 h-3" />}
                     <span className="uppercase">{getStatusLabel(merchant.status)}</span>
                   </div>
+                  <div className={`px-4 py-1.5 rounded-full text-[10px] font-bold border tracking-wider ${
+                    merchant.settlementProfileConfigured
+                      ? 'bg-primary/10 text-primary border-primary/20'
+                      : 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+                  }`}>
+                    {merchant.settlementProfileConfigured ? 'SETTLEMENT CONFIGURED' : 'SETTLEMENT MISSING'}
+                  </div>
 
                   {merchant.status === 'pending' && (
                     <div className="flex gap-2">
@@ -133,6 +178,16 @@ export function MerchantsView() {
                       </Button>
                     </div>
                   )}
+                  <Link href={`/admin/merchants/${merchant.id}/settlement-profile`}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="p-2 h-10 w-10 text-primary hover:bg-primary/10 rounded-xl border border-white/5"
+                      title="Settlement Profile"
+                    >
+                      <Settings2 className="w-5 h-5" />
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </Card>

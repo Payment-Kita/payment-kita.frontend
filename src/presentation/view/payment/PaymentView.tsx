@@ -17,6 +17,8 @@ export function PaymentView() {
     paymentRequest,
     isLoading,
     error,
+    isCompleted,
+    isTerminal,
     timeLeft,
     isCopied,
     isPaying,
@@ -43,7 +45,7 @@ export function PaymentView() {
       <div className="w-full max-w-lg relative z-10">
         {isLoading ? (
           <LoadingSpinner size="xl" text={t('pay_page.loading')} />
-        ) : error ? (
+        ) : error && !paymentRequest ? (
           <Card variant="glass" className="p-12 text-center rounded-[3rem] border-destructive/20 bg-destructive/5 animate-in zoom-in-95 duration-500">
             <div className="w-20 h-20 mx-auto bg-destructive/10 rounded-3xl flex items-center justify-center mb-8">
               <AlertCircle className="w-10 h-10 text-destructive" />
@@ -67,13 +69,13 @@ export function PaymentView() {
                     <span className="font-black tracking-widest uppercase">{formatTimeLeft(timeLeft)}</span>
                   </div>
                   
-                  <div className="relative z-10 space-y-1">
+                    <div className="relative z-10 space-y-1">
                     <div className="text-5xl font-black text-white tracking-tighter mb-1">
-                        {formatAmount(paymentRequest.amount, paymentRequest.decimals)}
+                        {formatAmount(paymentRequest.amount, paymentRequest.amount_decimals)}
                     </div>
                     <div className="text-primary font-black tracking-[0.3em] uppercase text-[10px] flex items-center justify-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                        {getChainName(paymentRequest.chainId)} Network
+                        {getChainName(paymentRequest.dest_chain)} Network
                     </div>
                   </div>
                 </div>
@@ -85,7 +87,7 @@ export function PaymentView() {
                   <div className="transition-all duration-700 transform">
                     {activeMethod === 'dompetku' && (
                       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-500">
-                        <QRDisplay value={`paymentkita://pay/${requestId}`} />
+                        <QRDisplay value={paymentRequest.payment_code} />
                         <div className="text-center px-4">
                           <p className="text-sm text-white/40 font-medium leading-relaxed">
                             Scan with the <span className="text-white font-bold tracking-tight italic">PaymentKita</span> mobile app for instant confirmation.
@@ -119,11 +121,11 @@ export function PaymentView() {
                         <div className="space-y-4">
                             <Button
                             onClick={handlePay}
-                            disabled={isPaying || timeLeft <= 0 || !isWalletReady}
+                            disabled={isPaying || timeLeft <= 0 || !isWalletReady || isTerminal}
                             loading={isPaying}
                             className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/80 font-black text-xl shadow-glow-purple disabled:opacity-20 transition-all active:scale-[0.98]"
                             >
-                            {isPaying ? t('pay_page.processing') : t('pay_page.pay_now')}
+                            {isCompleted ? 'Payment Completed' : isPaying ? t('pay_page.processing') : t('pay_page.pay_now')}
                             </Button>
                             
                             {!isWalletReady && (
@@ -141,12 +143,12 @@ export function PaymentView() {
                       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-500">
                         <div className="bg-white/5 rounded-[2.5rem] p-8 border border-white/5 space-y-8">
                           <div className="space-y-3">
-                            <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block">Destination Token Address</label>
+                            <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block">Destination Contract / Program</label>
                             <div className="flex items-center gap-4 bg-black/20 p-4 rounded-2xl border border-white/5 group/copy">
                               <code className="text-primary text-xs font-mono flex-1 truncate font-bold">
-                                {paymentRequest.contractAddress}
+                                {paymentRequest.payment_instruction.to || paymentRequest.payment_instruction.program_id || paymentRequest.dest_token}
                               </code>
-                              <button onClick={() => navigator.clipboard.writeText(paymentRequest.contractAddress)} className="p-2 text-white/30 hover:text-white transition-all transform group-hover/copy:scale-110">
+                              <button onClick={() => navigator.clipboard.writeText(paymentRequest.payment_instruction.to || paymentRequest.payment_instruction.program_id || paymentRequest.dest_token)} className="p-2 text-white/30 hover:text-white transition-all transform group-hover/copy:scale-110">
                                 <Copy className="w-4 h-4" />
                               </button>
                             </div>
@@ -156,7 +158,7 @@ export function PaymentView() {
                             <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block">Transaction Interaction Data (Hex)</label>
                             <div className="relative group/hex">
                               <pre className="text-[11px] text-white/60 bg-black/40 rounded-2xl p-6 overflow-x-auto max-h-40 font-mono scrollbar-hide border border-white/5 leading-relaxed">
-                                {paymentRequest.txData.hex || paymentRequest.txData.base58 || paymentRequest.txData.base64}
+                                {paymentRequest.payment_instruction.data || paymentRequest.payment_instruction.data_base58 || paymentRequest.payment_instruction.data_base64}
                               </pre>
                               <button
                                 onClick={copyTxData}
@@ -175,14 +177,18 @@ export function PaymentView() {
                 <div className="p-6 text-center border-t border-white/5 bg-black/40">
                   <div className="flex items-center justify-center gap-3">
                     <ShieldCheck className="w-4 h-4 text-accent-green opacity-40" />
-                    <p className="text-[9px] text-white/20 font-black tracking-[0.4em] uppercase">Secured by institutional vault architecture</p>
+                    <p className="text-[9px] text-white/20 font-black tracking-[0.4em] uppercase">
+                      {isCompleted ? 'Payment confirmed on-chain' : 'Secured by institutional vault architecture'}
+                    </p>
                   </div>
                 </div>
               </Card>
 
               <div className="flex items-center justify-center gap-6 opacity-30">
                  <div className="h-px bg-white/20 flex-1" />
-                 <span className="text-[10px] font-bold text-white uppercase tracking-widest whitespace-nowrap">Order Confirmation Pending</span>
+                 <span className="text-[10px] font-bold text-white uppercase tracking-widest whitespace-nowrap">
+                   {isCompleted ? 'Order Confirmed' : paymentRequest.status === 'EXPIRED' ? 'Order Expired' : 'Order Confirmation Pending'}
+                 </span>
                  <div className="h-px bg-white/20 flex-1" />
               </div>
             </div>

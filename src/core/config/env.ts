@@ -8,6 +8,7 @@ export const ENV = {
 
   // Public API URL for direct public HTTP calls
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
+  NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
 
   // Shared secret between frontend proxy and backend middleware
   INTERNAL_PROXY_SECRET: process.env.INTERNAL_PROXY_SECRET || '',

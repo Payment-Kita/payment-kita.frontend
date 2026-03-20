@@ -62,6 +62,14 @@ export interface ApplyMerchantRequest {
   businessAddress?: string;
 }
 
+export interface MerchantSettlementProfileRequest {
+  invoice_currency?: string;
+  dest_chain: string;
+  dest_token: string;
+  dest_wallet: string;
+  bridge_token_symbol?: string;
+}
+
 // API Key requests
 export interface CreateApiKeyRequest {
   name: string;
@@ -90,4 +98,9 @@ export interface CreatePaymentAppRequest {
 
 export interface PaymentPrivacyRecoveryRequest {
   onchainPaymentId?: string;
+}
+
+export interface ResolvePartnerPaymentCodeRequest {
+  payment_code: string;
+  payer_wallet?: string;
 }

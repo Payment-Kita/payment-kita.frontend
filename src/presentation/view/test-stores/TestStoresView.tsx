@@ -59,7 +59,7 @@ export function TestStoresView() {
                         <Badge variant="success" className="bg-accent-green/10 text-accent-green border-accent-green/20">{user?.role}</Badge>
                     </div>
                 </div>
-                <Button onClick={logout} variant="destructive" className="w-full rounded-xl h-11 shadow-glow-red/10">
+                <Button onClick={logout} variant="danger" className="w-full rounded-xl h-11 shadow-glow-red/10">
                     <LogOut className="h-4 w-4 mr-2" />
                     Terminate Session
                 </Button>
@@ -87,7 +87,7 @@ export function TestStoresView() {
                     <Button 
                         key={item.id}
                         onClick={() => setTheme(item.id as any)} 
-                        variant={theme === item.id ? 'default' : 'outline'}
+                        variant={theme === item.id ? 'primary' : 'outline'}
                         className={cn(
                             "rounded-xl h-14 flex flex-col items-center justify-center gap-1 transition-all",
                             theme === item.id ? "bg-primary border-primary shadow-glow-purple/20" : "border-white/5 hover:bg-white/5"
@@ -114,7 +114,7 @@ export function TestStoresView() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Button onClick={() => success('Confirmed', 'Action was successful')} variant="success" className="rounded-xl h-12 shadow-glow-green/5">Success</Button>
-            <Button onClick={() => error('Error', 'Something went wrong')} variant="destructive" className="rounded-xl h-12 shadow-glow-red/5">Critical</Button>
+            <Button onClick={() => error('Error', 'Something went wrong')} variant="danger" className="rounded-xl h-12 shadow-glow-red/5">Critical</Button>
             <Button onClick={() => warning('Wait', 'Check these values')} variant="warning" className="rounded-xl h-12 shadow-glow-orange/5">Warning</Button>
             <Button onClick={() => info('Note', 'System update pending')} variant="secondary" className="rounded-xl h-12">Info</Button>
           </div>

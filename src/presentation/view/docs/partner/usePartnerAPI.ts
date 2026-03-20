@@ -17,22 +17,25 @@ export function usePartnerAPI() {
 
   const headers = [
     { name: 'X-PK-Key', value: 'your_api_key', desc: 'Your partner API key' },
-    { name: 'X-PK-Signature', value: 'hmac_signature', desc: 'HMAC-SHA256 signature of the payload' },
+    { name: 'X-PK-Signature', value: 'hmac_signature', desc: 'HMAC-SHA256 of timestamp + method + path + body_hash' },
     { name: 'X-PK-Timestamp', value: 'unix_timestamp', desc: 'Current Unix timestamp in seconds' },
     { name: 'Content-Type', value: 'application/json', desc: 'Must be application/json' }
   ];
 
   const requestSchema = [
-    { field: 'amount', type: 'string', required: true, desc: 'Amount in smallest unit (e.g., "100000000" for 100 USDC)' },
-    { field: 'currency', type: 'string', required: true, desc: 'Token symbol (USDC, USDT, DAI)' },
-    { field: 'dest_chain', type: 'string', required: true, desc: 'CAIP-2 chain ID (eip155:8453)' },
-    { field: 'metadata.order_id', type: 'string', required: false, desc: 'Your internal order ID' },
+    { field: 'merchant_id', type: 'string', required: false, desc: 'Optional merchant UUID override for admin/internal use. Normal merchant-authenticated requests should omit it.' },
+    { field: 'chain_id', type: 'string', required: true, desc: 'CAIP-2 chain id selected by the customer, for example eip155:8453.' },
+    { field: 'selected_token', type: 'string', required: true, desc: 'Token address or mint selected by the customer on chain_id.' },
+    { field: 'pricing_type', type: 'string', required: true, desc: 'One of invoice_currency, payment_token_fixed, or payment_token_dynamic.' },
+    { field: 'requested_amount', type: 'string', required: true, desc: 'Human-readable decimal string. Backend converts it into atomic units based on pricing_type and token decimals.' },
   ];
 
   const webhookSchema = [
-    { field: 'id', type: 'string', desc: 'Unique webhook event ID' },
-    { field: 'type', type: 'string', desc: 'Event type (payment.completed, payment.failed)' },
-    { field: 'data', type: 'object', desc: 'Detailed payment data object' },
+    { field: 'paymentId', type: 'string', desc: 'Internal payment identifier for payment runtime events' },
+    { field: 'status', type: 'string', desc: 'Runtime payment status such as completed, failed, refunded' },
+    { field: 'sourceTxHash', type: 'string', desc: 'Origin chain transaction hash when available' },
+    { field: 'destTxHash', type: 'string', desc: 'Destination chain transaction hash when available' },
+    { field: 'reason', type: 'string', desc: 'Failure reason for PAYMENT_FAILED when present' },
   ];
 
   return {

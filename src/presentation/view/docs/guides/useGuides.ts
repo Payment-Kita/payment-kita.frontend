@@ -5,105 +5,38 @@ export function useGuides() {
     {
       category: 'Getting Started',
       items: [
-        {
-          title: 'Introduction to Payment Kita',
-          description: 'Learn about Payment Kita features and capabilities',
-          href: '/docs/guides/introduction',
-          readTime: '5 min',
-          difficulty: 'Beginner',
-          tags: ['overview'],
-        },
-        {
-          title: 'Quick Start',
-          description: 'Get up and running in 5 minutes',
-          href: '/docs/guides/quick-start',
-          readTime: '5 min',
-          difficulty: 'Beginner',
-          tags: ['setup'],
-        },
-        {
-          title: 'Creating Your First Payment',
-          description: 'Step-by-step guide to creating payments',
-          href: '/docs/guides/first-payment',
-          readTime: '10 min',
-          difficulty: 'Beginner',
-          tags: ['payments'],
-        },
+        { title: 'Introduction to Payment Kita', description: 'Use the documentation overview as the entry point for current runtime contracts and migration context.', href: '/docs', readTime: '5 min', difficulty: 'Beginner', tags: ['overview'] },
+        { title: 'Quick Start with Partner Flow', description: 'Start with quote creation, session creation, hosted read, and resolve-code.', href: '/docs/partner-api', readTime: '8 min', difficulty: 'Beginner', tags: ['setup'] },
+        { title: 'API Reference Walkthrough', description: 'Inspect request and response examples and test routes interactively.', href: '/docs/api', readTime: '10 min', difficulty: 'Beginner', tags: ['payments'] },
       ],
     },
     {
       category: 'Integration Guides',
       items: [
-        {
-          title: 'Hosted Checkout Integration',
-          description: 'Integrate Payment Kita hosted checkout page',
-          href: '/docs/guides/hosted-checkout',
-          readTime: '15 min',
-          difficulty: 'Intermediate',
-          tags: ['checkout', 'frontend'],
-          featured: true,
-        },
-        {
-          title: 'Custom Integration',
-          description: 'Build a custom payment flow with our API',
-          href: '/docs/guides/custom-integration',
-          readTime: '30 min',
-          difficulty: 'Advanced',
-          tags: ['api', 'custom'],
-        },
-        {
-          title: 'Handling Webhooks',
-          description: 'Process payment notifications securely',
-          href: '/docs/guides/webhooks',
-          readTime: '20 min',
-          difficulty: 'Intermediate',
-          tags: ['webhooks', 'backend'],
-        },
+        { title: 'Hosted Checkout Integration', description: 'Render the partner hosted checkout read model and poll session status safely.', href: '/docs/partner-api', readTime: '15 min', difficulty: 'Intermediate', tags: ['checkout', 'frontend'], featured: true },
+        { title: 'Custom Partner Integration', description: 'Build a full partner integration using partner HMAC auth and two-step quote/session flow.', href: '/docs/partner-api', readTime: '20 min', difficulty: 'Intermediate', tags: ['api', 'custom'] },
+        { title: 'Handling Webhooks', description: 'Verify runtime webhook signatures and align your retry expectations with current policy.', href: '/docs/partner-api', readTime: '12 min', difficulty: 'Intermediate', tags: ['webhooks', 'backend'] },
       ],
     },
     {
       category: 'Advanced Topics',
       items: [
-        {
-          title: 'Cross-Chain Payments',
-          description: 'Accept payments across different blockchains',
-          href: '/docs/guides/cross-chain',
-          readTime: '25 min',
-          difficulty: 'Advanced',
-          tags: ['cross-chain', 'bridging'],
-        },
-        {
-          title: 'Token Swapping',
-          description: 'Automatic token conversion with Uniswap',
-          href: '/docs/guides/token-swapping',
-          readTime: '20 min',
-          difficulty: 'Advanced',
-          tags: ['swap', 'defi'],
-        },
-        {
-          title: 'Privacy Payments',
-          description: 'Implement privacy-preserving payment flows',
-          href: '/docs/guides/privacy-payments',
-          readTime: '30 min',
-          difficulty: 'Expert',
-          tags: ['privacy', 'advanced'],
-        },
+        { title: 'Cross-Chain Payments', description: 'Understand how partner sessions map to cross-chain runtime execution.', href: '/docs/api', readTime: '18 min', difficulty: 'Advanced', tags: ['cross-chain', 'bridging'] },
+        { title: 'Legacy Cutover Planning', description: 'Review staged migration and deprecation expectations before disabling legacy routes.', href: '/docs/api', readTime: '14 min', difficulty: 'Advanced', tags: ['migration', 'ops'] },
+        { title: 'SDK Consumption Patterns', description: 'Review SDK direction and how it should wrap the partner flow contract.', href: '/docs/sdks', readTime: '10 min', difficulty: 'Advanced', tags: ['sdk', 'advanced'] },
       ],
     },
   ];
 
-  const getDifficultyVariant = (difficulty: string): "default" | "secondary" | "destructive" | "outline" | "success" | "warning" => {
+  const getDifficultyVariant = (difficulty: string): 'default' | 'secondary' | 'danger' | 'outline' | 'success' | 'warning' => {
     switch (difficulty) {
       case 'Beginner': return 'success';
       case 'Intermediate': return 'warning';
-      case 'Advanced': return 'destructive';
-      case 'Expert': return 'destructive';
+      case 'Advanced': return 'danger';
+      case 'Expert': return 'danger';
       default: return 'outline';
     }
   };
 
-  return {
-    guides,
-    getDifficultyVariant
-  };
+  return { guides, getDifficultyVariant };
 }

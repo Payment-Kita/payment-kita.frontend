@@ -1,32 +1,12 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useAccount, useSwitchChain, useSendTransaction, useChainId } from 'wagmi';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, Transaction, TransactionInstruction, VersionedTransaction } from '@solana/web3.js';
-import { httpClient } from '@/core/network';
 import { useTranslation } from '@/presentation/hooks';
 import type { MethodType } from '@/presentation/components/organisms/checkout/MethodSelector';
-
-// Extended PaymentRequest for this page (server response includes txData)
-export interface PaymentRequestResponse {
-  requestId: string;
-  chainId: string;
-  contractAddress: string;
-  amount: string;
-  decimals: number;
-  walletAddress?: string;
-  description?: string;
-  status: 'PENDING' | 'COMPLETED' | 'EXPIRED' | 'CANCELLED';
-  expiresAt: string;
-  txData: {
-    to?: string;
-    programId?: string;
-    hex?: string;
-    base58?: string;
-    base64?: string;
-  };
-}
+import { usePartnerPaymentSessionQuery } from '@/data/usecase';
 
 const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
 const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
@@ -34,8 +14,9 @@ const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xW
 export function usePayment(requestId: string) {
   const { t } = useTranslation();
 
-  const [paymentRequest, setPaymentRequest] = useState<PaymentRequestResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const sessionQuery = usePartnerPaymentSessionQuery(requestId, !!requestId);
+  const paymentRequest = sessionQuery.data ?? null;
+  const isLoading = sessionQuery.isLoading;
   const [error, setError] = useState('');
   const [timeLeft, setTimeLeft] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
@@ -43,7 +24,7 @@ export function usePayment(requestId: string) {
   const [activeMethod, setActiveMethod] = useState<MethodType>('dompetku');
 
   // EVM Hooks
-  const { address: evmAddress, isConnected: isEvmConnected } = useAccount();
+  const { isConnected: isEvmConnected } = useAccount();
   const { switchChainAsync } = useSwitchChain();
   const { sendTransactionAsync } = useSendTransaction();
   const currentChainId = useChainId();
@@ -52,42 +33,42 @@ export function usePayment(requestId: string) {
   const { connection } = useConnection();
   const { publicKey, sendTransaction: sendSolTransaction } = useWallet();
 
-  const needsEvm = paymentRequest?.chainId?.startsWith('eip155:') ?? false;
-  const needsSvm = paymentRequest?.chainId?.startsWith('solana:') ?? false;
+  const needsEvm = paymentRequest?.dest_chain?.startsWith('eip155:') ?? false;
+  const needsSvm = paymentRequest?.dest_chain?.startsWith('solana:') ?? false;
   const isWalletReady = needsEvm ? isEvmConnected : needsSvm ? Boolean(publicKey) : false;
-
-  const loadPaymentRequest = useCallback(async () => {
-    if (!requestId) return;
-    setIsLoading(true);
-    try {
-      const result = await httpClient.get<PaymentRequestResponse>(`/v1/pay/${requestId}`);
-      if (result.error) {
-        setError(result.error || t('pay_page.load_failed'));
-      } else if (result.data) {
-        setPaymentRequest(result.data);
-      }
-    } catch (err) {
-      setError(t('pay_page.network_error'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [requestId, t]);
+  const isTerminal = paymentRequest?.status === 'COMPLETED' || paymentRequest?.status === 'EXPIRED' || paymentRequest?.status === 'CANCELLED' || paymentRequest?.status === 'FAILED';
+  const isCompleted = paymentRequest?.status === 'COMPLETED';
 
   useEffect(() => {
-    loadPaymentRequest();
-  }, [loadPaymentRequest]);
+    if (sessionQuery.error) {
+      setError(sessionQuery.error.message || t('pay_page.load_failed'));
+      return;
+    }
+    if (!paymentRequest) {
+      return;
+    }
+    if (paymentRequest.status === 'EXPIRED') {
+      setError(t('pay_page.expired_error'));
+      return;
+    }
+    if (paymentRequest.status === 'COMPLETED') {
+      setError('');
+      return;
+    }
+    setError('');
+  }, [paymentRequest, sessionQuery.error, t]);
 
   useEffect(() => {
     if (!paymentRequest) return;
 
-    const expiresAt = new Date(paymentRequest.expiresAt).getTime();
+    const expiresAt = new Date(paymentRequest.expires_at).getTime();
 
     const updateTimer = () => {
       const now = Date.now();
       const left = Math.max(0, Math.floor((expiresAt - now) / 1000));
       setTimeLeft(left);
 
-      if (left <= 0) {
+      if (left <= 0 && paymentRequest.status === 'PENDING') {
         setError(t('pay_page.expired_error'));
       }
     };
@@ -126,7 +107,7 @@ export function usePayment(requestId: string) {
 
   const copyTxData = () => {
     if (!paymentRequest) return;
-    const data = paymentRequest.txData.hex || paymentRequest.txData.base58 || paymentRequest.txData.base64 || '';
+    const data = paymentRequest.payment_instruction.data || paymentRequest.payment_instruction.data_base58 || paymentRequest.payment_instruction.data_base64 || '';
     navigator.clipboard.writeText(data);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
@@ -138,7 +119,7 @@ export function usePayment(requestId: string) {
     setIsPaying(true);
 
     try {
-      if (paymentRequest.chainId.startsWith('eip155:')) {
+      if (paymentRequest.dest_chain.startsWith('eip155:')) {
         // EVM Handling
         if (!isEvmConnected) {
           setError(t('payments.connect_wallet_notice'));
@@ -146,21 +127,21 @@ export function usePayment(requestId: string) {
           return;
         }
 
-        const targetChainId = parseInt(paymentRequest.chainId.split(':')[1]);
+        const targetChainId = parseInt(paymentRequest.dest_chain.split(':')[1]);
         if (currentChainId !== targetChainId) {
           await switchChainAsync({ chainId: targetChainId });
         }
 
-        if (paymentRequest.txData.hex && paymentRequest.txData.to) {
+        if (paymentRequest.payment_instruction.data && paymentRequest.payment_instruction.to) {
           const hash = await sendTransactionAsync({
-            to: paymentRequest.txData.to as `0x${string}`,
-            data: paymentRequest.txData.hex as `0x${string}`,
-            value: BigInt(0),
+            to: paymentRequest.payment_instruction.to as `0x${string}`,
+            data: paymentRequest.payment_instruction.data as `0x${string}`,
+            value: BigInt(paymentRequest.payment_instruction.value || '0'),
           });
           console.log('EVM Payment sent:', hash);
-          window.location.reload();
+          await sessionQuery.refetch();
         }
-      } else if (paymentRequest.chainId.startsWith('solana:')) {
+      } else if (paymentRequest.dest_chain.startsWith('solana:')) {
         // Solana Handling
         if (!publicKey || !sendSolTransaction) {
           setError(t('pay_page.connect_solana'));
@@ -168,30 +149,30 @@ export function usePayment(requestId: string) {
           return;
         }
 
-        const encoded = paymentRequest.txData.base58 || paymentRequest.txData.base64;
+        const encoded = paymentRequest.payment_instruction.data_base58 || paymentRequest.payment_instruction.data_base64;
         if (!encoded) throw new Error(t('pay_page.process_failed'));
 
         // 1) Try legacy/full serialized transaction path first.
         try {
-          const txBuffer = paymentRequest.txData.base58
+          const txBuffer = paymentRequest.payment_instruction.data_base58
             ? Buffer.from(decodeBase58(encoded))
             : Buffer.from(encoded, 'base64');
           const versioned = VersionedTransaction.deserialize(txBuffer);
           const signature = await sendSolTransaction(versioned, connection);
           console.log('Solana Payment sent:', signature);
-          window.location.reload();
+          await sessionQuery.refetch();
           return;
         } catch (_) {
           // Continue with instruction-data flow.
         }
 
         // 2) New path: backend sends Anchor instruction bytes (base58) and FE composes transaction.
-        if (!paymentRequest.txData.base58 || !paymentRequest.txData.programId) {
+        if (!paymentRequest.payment_instruction.data_base58 || !paymentRequest.payment_instruction.program_id) {
           throw new Error(t('pay_page.process_failed'));
         }
-        const programId = new PublicKey(paymentRequest.txData.programId);
-        const instructionData = decodeBase58(paymentRequest.txData.base58);
-        const requestIdBytes32 = uuidToBytes32(paymentRequest.requestId);
+        const programId = new PublicKey(paymentRequest.payment_instruction.program_id);
+        const instructionData = decodeBase58(paymentRequest.payment_instruction.data_base58);
+        const requestIdBytes32 = uuidToBytes32(paymentRequest.payment_id);
         const [paymentRequestPda] = PublicKey.findProgramAddressSync(
           [utf8('payment_request'), requestIdBytes32],
           programId
@@ -223,7 +204,7 @@ export function usePayment(requestId: string) {
         tx.add(ix);
         const signature = await sendSolTransaction(tx, connection);
         console.log('Solana Payment sent:', signature);
-        window.location.reload();
+        await sessionQuery.refetch();
       }
     } catch (e: unknown) {
       console.error(e);
@@ -237,6 +218,8 @@ export function usePayment(requestId: string) {
     paymentRequest,
     isLoading,
     error,
+    isCompleted,
+    isTerminal,
     timeLeft,
     isCopied,
     isPaying,

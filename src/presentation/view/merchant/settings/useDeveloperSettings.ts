@@ -25,6 +25,7 @@ export const useDeveloperSettings = () => {
 
   useEffect(() => {
     if (merchant) {
+      console.log(merchant);
       setCallbackUrl(merchant.callbackUrl || '');
       setWebhookActive(merchant.webhookIsActive || false);
     }

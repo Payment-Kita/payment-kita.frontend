@@ -10,6 +10,22 @@ export const useAdminStats = () => {
   });
 };
 
+export const useAdminLegacyEndpointObservability = () => {
+  return useQuery({
+    queryKey: ['admin', 'diagnostics', 'legacy-endpoints'],
+    queryFn: () => adminRepository.getLegacyEndpointObservability(),
+    refetchInterval: 15000,
+  });
+};
+
+export const useAdminSettlementProfileGaps = () => {
+  return useQuery({
+    queryKey: ['admin', 'diagnostics', 'settlement-profile-gaps'],
+    queryFn: () => adminRepository.getSettlementProfileGaps(),
+    refetchInterval: 30000,
+  });
+};
+
 export const useAdminUsers = (search?: string) => {
   return useQuery({
     queryKey: ['admin', 'users', search],
@@ -68,6 +84,26 @@ export const useUpdateMerchantStatus = () => {
       adminRepository.updateMerchantStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'merchants'] });
+    },
+  });
+};
+
+export const useAdminMerchantSettlementProfile = (merchantId?: string) => {
+  return useQuery({
+    queryKey: ['admin', 'merchants', merchantId, 'settlement-profile'],
+    queryFn: () => adminRepository.getMerchantSettlementProfile(merchantId!),
+    enabled: Boolean(merchantId),
+  });
+};
+
+export const useUpdateMerchantSettlementProfile = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: { invoice_currency: string; dest_chain: string; dest_token: string; dest_wallet: string; bridge_token_symbol?: string } }) =>
+      adminRepository.updateMerchantSettlementProfile(id, payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'merchants'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'merchants', variables.id, 'settlement-profile'] });
     },
   });
 };

@@ -14,6 +14,7 @@ export function useApiKeys() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
+  const [createdApiKey, setCreatedApiKey] = useState<string | null>(null);
   const [createdSecret, setCreatedSecret] = useState<string | null>(null);
 
   const handleCreate = async () => {
@@ -25,6 +26,7 @@ export function useApiKeys() {
       };
       const result = await createMutation.mutateAsync(request);
       if (result) {
+        setCreatedApiKey(result.apiKey);
         setCreatedSecret(result.secretKey);
       }
       setNewKeyName('');
@@ -49,6 +51,7 @@ export function useApiKeys() {
 
   const closeModal = () => {
       setIsModalOpen(false);
+      setCreatedApiKey(null);
       setCreatedSecret(null);
   };
 
@@ -61,6 +64,7 @@ export function useApiKeys() {
     setIsModalOpen,
     newKeyName,
     setNewKeyName,
+    createdApiKey,
     createdSecret,
     handleCreate,
     handleRevoke,

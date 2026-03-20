@@ -2,7 +2,7 @@
  * Common Repository Interfaces
  */
 import type { ApiResponse } from '@/core/network';
-import type { ConnectWalletRequest, ApplyMerchantRequest } from '../../model/request';
+import type { ConnectWalletRequest, ApplyMerchantRequest, MerchantSettlementProfileRequest } from '../../model/request';
 import type {
   ChainsResponse,
   TokensResponse,
@@ -11,6 +11,7 @@ import type {
   MerchantStatusResponse,
   WebhookLogsResponse,
   MessageResponse,
+  MerchantSettlementProfileResponse,
 } from '../../model/response';
 import type { Merchant } from '../../model/entity';
 
@@ -39,6 +40,8 @@ export interface IMerchantRepository {
   applyMerchant(input: ApplyMerchantRequest): Promise<ApiResponse<Merchant>>;
   getMerchantStatus(): Promise<ApiResponse<MerchantStatusResponse>>;
   updateSettings(input: { callbackUrl: string; webhookIsActive: boolean }): Promise<ApiResponse<Merchant>>;
+  getSettlementProfile(): Promise<ApiResponse<MerchantSettlementProfileResponse>>;
+  updateSettlementProfile(input: MerchantSettlementProfileRequest): Promise<ApiResponse<MerchantSettlementProfileResponse>>;
 }
 
 // ============== Webhook Repository ==============

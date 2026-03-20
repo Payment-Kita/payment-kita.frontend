@@ -21,6 +21,8 @@ export const API_ENDPOINTS = {
   PAYMENT_REQUESTS: '/v1/payment-requests',
   PAYMENT_REQUEST_BY_ID: (id: string) => `/v1/payment-requests/${id}`,
   PAY_PUBLIC: (id: string) => `/v1/pay/${id}`,
+  PARTNER_PAYMENT_SESSION_BY_ID: (id: string) => `/v1/partner/payment-sessions/${id}`,
+  PARTNER_PAYMENT_SESSION_RESOLVE_CODE: '/v1/partner/payment-sessions/resolve-code',
 
   // Wallets
   WALLETS: '/v1/wallets',
@@ -33,6 +35,7 @@ export const API_ENDPOINTS = {
   MERCHANT_APPLY: '/v1/merchants/apply',
   MERCHANT_STATUS: '/v1/merchants/status',
   MERCHANT_UPDATE_SETTINGS: '/v1/merchants/settings',
+  MERCHANT_SETTLEMENT_PROFILE: '/v1/merchants/settlement-profile',
 
   // Webhooks
   WEBHOOK_LOGS: '/v1/merchants/webhooks/logs',
@@ -43,6 +46,8 @@ export const API_ENDPOINTS = {
   ADMIN_USERS: '/v1/admin/users',
   ADMIN_MERCHANTS: '/v1/admin/merchants',
   ADMIN_MERCHANT_STATUS: (id: string) => `/v1/admin/merchants/${id}/status`,
+  ADMIN_MERCHANT_SETTLEMENT_PROFILE: (id: string) => `/v1/admin/merchants/${id}/settlement-profile`,
+  ADMIN_DIAGNOSTICS_SETTLEMENT_PROFILE_GAPS: '/v1/admin/diagnostics/settlement-profile-gaps',
   ADMIN_CHAINS: '/v1/admin/chains',
   ADMIN_CHAIN_BY_ID: (id: number | string) => `/v1/admin/chains/${id}`,
   ADMIN_RPCS: '/v1/admin/rpcs',
@@ -77,6 +82,7 @@ export const API_ENDPOINTS = {
   ADMIN_ROUTE_POLICIES: '/v1/admin/route-policies',
   ADMIN_ROUTE_POLICY_BY_ID: (id: string) => `/v1/admin/route-policies/${id}`,
   ADMIN_DIAGNOSTICS_ROUTE_ERROR: (paymentId: string) => `/v1/admin/diagnostics/route-error/${paymentId}`,
+  ADMIN_DIAGNOSTICS_LEGACY_ENDPOINTS: '/v1/admin/diagnostics/legacy-endpoints',
 
   // Chains
   CHAINS: '/v1/chains',

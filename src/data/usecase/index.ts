@@ -13,6 +13,7 @@ export {
 export {
   useCreatePaymentAppMutation,
 } from './payment_app_usecase';
+export { usePartnerPaymentSessionQuery, useResolvePartnerPaymentCodeMutation } from './partner_payment_session_usecase';
 
 // Payment usecases
 export {

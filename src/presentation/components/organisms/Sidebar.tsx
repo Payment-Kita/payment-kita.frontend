@@ -25,6 +25,7 @@ import {
   Percent,
   Route,
   Shuffle,
+  AlertTriangle,
 } from 'lucide-react';
 
 // Navigation items definition
@@ -55,6 +56,7 @@ export const adminNavItems = [
   { href: '/admin/onchain-adapters', labelKey: 'admin.onchainAdapters', icon: Route },
   { href: '/admin/route-policies', labelKey: 'admin.routePolicies', icon: Route },
   { href: '/admin/crosschain-config', labelKey: 'admin.crosschainConfigs', icon: Shuffle },
+  { href: '/admin/diagnostics/legacy-endpoints', labelKey: 'Legacy Diagnostics', icon: AlertTriangle },
 ];
 
 export default function Sidebar() {

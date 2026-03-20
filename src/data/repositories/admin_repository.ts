@@ -1,6 +1,10 @@
 import {
   AdminDataSource,
   AdminStats,
+  LegacyEndpointObservabilitySnapshot,
+  SettlementProfileGapSnapshot,
+  MerchantSettlementProfile,
+  MerchantSettlementProfilePayload,
   BridgeConfigPayload,
   StargateConfigPayload,
   StargateE2EConfigurePayload,
@@ -36,6 +40,14 @@ export class AdminRepository {
     return this.dataSource.getStats();
   }
 
+  async getLegacyEndpointObservability(): Promise<LegacyEndpointObservabilitySnapshot> {
+    return this.dataSource.getLegacyEndpointObservability();
+  }
+
+  async getSettlementProfileGaps(): Promise<SettlementProfileGapSnapshot> {
+    return this.dataSource.getSettlementProfileGaps();
+  }
+
   async getUsers(search?: string): Promise<any[]> {
     return this.dataSource.getUsers(search);
   }
@@ -46,6 +58,14 @@ export class AdminRepository {
 
   async updateMerchantStatus(id: string, status: string): Promise<void> {
     return this.dataSource.updateMerchantStatus(id, status);
+  }
+
+  async getMerchantSettlementProfile(id: string): Promise<MerchantSettlementProfile> {
+    return this.dataSource.getMerchantSettlementProfile(id);
+  }
+
+  async updateMerchantSettlementProfile(id: string, payload: MerchantSettlementProfilePayload): Promise<MerchantSettlementProfile> {
+    return this.dataSource.updateMerchantSettlementProfile(id, payload);
   }
 
   async getChains(page?: number, limit?: number): Promise<{ items: any[], meta?: any }> {

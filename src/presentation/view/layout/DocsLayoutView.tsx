@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Book, FileCode, Package, FileText, Menu, X, Github } from 'lucide-react';
+import { Book, FileCode, Package, FileText, Menu, X, Github, Globe } from 'lucide-react';
 import { cn } from '@/core/utils/cn';
 import { Button } from '@/presentation/components/atoms';
+import { useTranslation } from '@/presentation/hooks/useTranslation';
 
 const navigation = [
   { name: 'Introduction', href: '/docs', icon: Book },
@@ -18,6 +19,11 @@ const navigation = [
 export function DocsLayoutView({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { t, locale, setLocale } = useTranslation();
+
+  const toggleLocale = () => {
+    setLocale(locale === 'en' ? 'id' : 'en');
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground animate-fade-in group/layout relative overflow-hidden">
@@ -80,7 +86,7 @@ export function DocsLayoutView({ children }: { children: React.ReactNode }) {
               const Icon = item.icon;
               return (
                 <Link
-                  key={item.name}
+                  key={t(`docs.nav.${item.href}`, item.name)}
                   href={item.href}
                   className={cn(
                     'flex items-center gap-4 px-4 py-3 rounded-2xl text-sm font-bold transition-all duration-300 relative group/item',
@@ -92,7 +98,7 @@ export function DocsLayoutView({ children }: { children: React.ReactNode }) {
                   aria-current={isActive ? 'page' : undefined}
                 >
                   <Icon className={cn("h-5 w-5 transition-transform group-hover/item:scale-110", isActive ? "opacity-100" : "opacity-60")} aria-hidden="true" />
-                  {item.name}
+                  {t(`docs.nav.${item.href}`, item.name)}
                   {isActive && <div className="absolute right-3 w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
                 </Link>
               );
@@ -101,6 +107,17 @@ export function DocsLayoutView({ children }: { children: React.ReactNode }) {
 
           {/* Bottom Actions */}
           <div className="p-6 border-t border-white/5 space-y-3">
+            <button
+              type="button"
+              onClick={toggleLocale}
+              className="w-full flex items-center justify-between gap-4 px-4 py-3 rounded-xl text-sm font-bold text-muted hover:bg-white/5 hover:text-white transition-all"
+            >
+              <span className="flex items-center gap-3">
+                <Globe className="h-5 w-5 opacity-70" aria-hidden="true" />
+                {t('common.language', 'Language')}
+              </span>
+              <span className="uppercase text-xs font-black tracking-[0.2em] text-primary">{locale}</span>
+            </button>
              <Link
               href="https://github.com/payment-kita"
               target="_blank"
@@ -140,13 +157,21 @@ export function DocsLayoutView({ children }: { children: React.ReactNode }) {
                 <Menu className="h-6 w-6" aria-hidden="true" />
             </Button>
             <div className="hidden lg:flex items-center gap-2 text-muted text-sm font-bold">
-                <span>Documentation</span>
+                <span>{t('docs.layout.breadcrumb_root', 'Documentation')}</span>
                 <span className="opacity-20">/</span>
-                <span className="text-foreground">{navigation.find(n => n.href === pathname)?.name || 'Overview'}</span>
+                <span className="text-foreground">{t(`docs.nav.${pathname}`, navigation.find(n => n.href === pathname)?.name || 'Overview')}</span>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
+             <button
+                type="button"
+                onClick={toggleLocale}
+                className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-bold uppercase tracking-[0.2em] text-muted hover:text-white hover:border-white/20 transition-all"
+             >
+                <Globe className="h-4 w-4" aria-hidden="true" />
+                <span>{locale}</span>
+             </button>
              <Button variant="outline" size="sm" className="hidden border-white/10 rounded-xl font-bold text-xs h-10 px-4 hover:bg-white/5">
                 Feedback
              </Button>

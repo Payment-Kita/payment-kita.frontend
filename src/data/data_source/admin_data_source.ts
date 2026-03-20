@@ -6,10 +6,70 @@ export interface AdminStats {
   totalMerchants: number;
   totalVolume: string;
   activeChains: number;
+  legacyEndpointObservability?: {
+    tracked_endpoints: number;
+    total_hits: number;
+    last_seen_at?: string;
+  };
+}
+
+export interface LegacyEndpointObservabilityEntry {
+  endpoint_family: string;
+  replacement: string;
+  sunset_at: string;
+  mode: 'warn' | 'disabled' | string;
+  total_hits: number;
+  last_seen_at?: string;
+  merchant_hits?: Record<string, number>;
+}
+
+export interface LegacyEndpointObservabilitySnapshot {
+  generated_at: string;
+  summary: {
+    tracked_endpoints: number;
+    total_hits: number;
+    last_seen_at?: string;
+  };
+  endpoints: LegacyEndpointObservabilityEntry[];
+}
+
+export interface SettlementProfileGapMerchant {
+  id: string;
+  businessName: string;
+  businessEmail: string;
+  merchantType: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface SettlementProfileGapSnapshot {
+  total_missing: number;
+  merchants: SettlementProfileGapMerchant[];
 }
 
 export interface AdminMerchantUpdateInput {
   status: string;
+}
+
+export interface MerchantSettlementProfile {
+  configured: boolean;
+  id?: string;
+  merchant_id: string;
+  invoice_currency?: string;
+  dest_chain?: string;
+  dest_token?: string;
+  dest_wallet?: string;
+  bridge_token_symbol?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface MerchantSettlementProfilePayload {
+  invoice_currency: string;
+  dest_chain: string;
+  dest_token: string;
+  dest_wallet: string;
+  bridge_token_symbol?: string;
 }
 
 export interface TeamMemberPayload {
@@ -216,6 +276,18 @@ export class AdminDataSource {
     return data!;
   }
 
+  async getLegacyEndpointObservability(): Promise<LegacyEndpointObservabilitySnapshot> {
+    const { data, error } = await httpClient.get<LegacyEndpointObservabilitySnapshot>(API_ENDPOINTS.ADMIN_DIAGNOSTICS_LEGACY_ENDPOINTS);
+    if (error) throw new Error(error);
+    return data!;
+  }
+
+  async getSettlementProfileGaps(): Promise<SettlementProfileGapSnapshot> {
+    const { data, error } = await httpClient.get<SettlementProfileGapSnapshot>(API_ENDPOINTS.ADMIN_DIAGNOSTICS_SETTLEMENT_PROFILE_GAPS);
+    if (error) throw new Error(error);
+    return data!;
+  }
+
   async getUsers(search?: string): Promise<any[]> {
     const url = search 
       ? `${API_ENDPOINTS.ADMIN_USERS}?search=${encodeURIComponent(search)}` 
@@ -234,6 +306,18 @@ export class AdminDataSource {
   async updateMerchantStatus(id: string, status: string): Promise<void> {
     const { error } = await httpClient.put(API_ENDPOINTS.ADMIN_MERCHANT_STATUS(id), { status });
     if (error) throw new Error(error);
+  }
+
+  async getMerchantSettlementProfile(id: string): Promise<MerchantSettlementProfile> {
+    const { data, error } = await httpClient.get<MerchantSettlementProfile>(API_ENDPOINTS.ADMIN_MERCHANT_SETTLEMENT_PROFILE(id));
+    if (error) throw new Error(error);
+    return data!;
+  }
+
+  async updateMerchantSettlementProfile(id: string, payload: MerchantSettlementProfilePayload): Promise<MerchantSettlementProfile> {
+    const { data, error } = await httpClient.put<MerchantSettlementProfile>(API_ENDPOINTS.ADMIN_MERCHANT_SETTLEMENT_PROFILE(id), payload);
+    if (error) throw new Error(error);
+    return data!;
   }
 
   // Chain Management

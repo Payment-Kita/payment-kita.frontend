@@ -18,19 +18,20 @@ export default function ApiKeysView() {
     setIsModalOpen,
     newKeyName,
     setNewKeyName,
+    createdApiKey,
     createdSecret,
     handleCreate,
     handleRevoke,
     closeModal
   } = useApiKeys();
 
-  const [copied, setCopied] = React.useState(false);
+  const [copiedField, setCopiedField] = React.useState<'api' | 'secret' | null>(null);
 
-  const handleCopySecret = async () => {
-    if (!createdSecret) return;
-    await navigator.clipboard.writeText(createdSecret);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+  const handleCopyValue = async (field: 'api' | 'secret', value?: string | null) => {
+    if (!value) return;
+    await navigator.clipboard.writeText(value);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 1500);
   };
 
   if (isLoading) {
@@ -133,15 +134,44 @@ export default function ApiKeysView() {
                 <div className="space-y-4">
                   <div className="p-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-200 text-sm flex items-start gap-2">
                     <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0" />
-                    <span>{t('settings.api_keys.modal.warning_copy_secret')}</span>
+                    <span>{t('settings.api_keys.modal.warning_copy_credentials')}</span>
                   </div>
-                  <div className="p-3 rounded-xl bg-black/40 border border-white/10 break-all font-mono text-sm text-foreground">
-                    {createdSecret}
+
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
+                      {t('settings.api_keys.modal.api_key_label')}
+                    </p>
+                    <div className="p-3 rounded-xl bg-black/40 border border-white/10 break-all font-mono text-sm text-foreground">
+                      {createdApiKey}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => handleCopyValue('api', createdApiKey)}
+                      className="gap-2"
+                    >
+                      {copiedField === 'api' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      {copiedField === 'api' ? t('settings.api_keys.modal.copied') : t('settings.api_keys.modal.copy_api_key')}
+                    </Button>
                   </div>
-                  <Button type="button" variant="secondary" onClick={handleCopySecret} className="gap-2">
-                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    {copied ? t('settings.api_keys.modal.copied') : t('settings.api_keys.modal.copy_secret')}
-                  </Button>
+
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
+                      {t('settings.api_keys.modal.secret_key_label')}
+                    </p>
+                    <div className="p-3 rounded-xl bg-black/40 border border-white/10 break-all font-mono text-sm text-foreground">
+                      {createdSecret}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => handleCopyValue('secret', createdSecret)}
+                      className="gap-2"
+                    >
+                      {copiedField === 'secret' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      {copiedField === 'secret' ? t('settings.api_keys.modal.copied') : t('settings.api_keys.modal.copy_secret')}
+                    </Button>
+                  </div>
                 </div>
             ) : (
                 <div className="space-y-4">

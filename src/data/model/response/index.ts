@@ -207,3 +207,79 @@ export interface CreatePaymentAppResponse {
     bridgeQuoteReason: string;
   };
 }
+
+export interface PartnerPaymentInstructionResponse {
+  chain_id: string;
+  to?: string;
+  value?: string;
+  data?: string;
+  program_id?: string;
+  data_base58?: string;
+  data_base64?: string;
+}
+
+export interface PartnerPaymentSessionResponse {
+  payment_id: string;
+  status: 'PENDING' | 'COMPLETED' | 'EXPIRED' | 'CANCELLED' | 'FAILED';
+  amount: string;
+  amount_decimals: number;
+  dest_chain: string;
+  dest_token: string;
+  dest_wallet: string;
+  expires_at: string;
+  payment_url: string;
+  payment_code: string;
+  payment_instruction: PartnerPaymentInstructionResponse;
+}
+
+export interface ResolvePartnerPaymentCodeResponse {
+  payment_id: string;
+  merchant_id: string;
+  amount: string;
+  amount_decimals: number;
+  dest_chain: string;
+  dest_token: string;
+  dest_wallet: string;
+  expires_at: string;
+  payment_instruction: PartnerPaymentInstructionResponse;
+}
+
+export interface MerchantSettlementProfileResponse {
+  configured: boolean;
+  merchant_id: string;
+  invoice_currency?: string;
+  dest_chain?: string;
+  dest_token?: string;
+  dest_wallet?: string;
+  bridge_token_symbol?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CreatePartnerCreatePaymentResponse {
+  payment_id: string;
+  merchant_id: string;
+  amount: string;
+  invoice_currency: string;
+  invoice_amount: string;
+  payer_selected_chain?: string;
+  payer_selected_token?: string;
+  payer_selected_token_symbol?: string;
+  quoted_token_symbol: string;
+  quoted_token_amount: string;
+  quoted_token_amount_atomic: string;
+  quoted_token_decimals: number;
+  quote_rate: string;
+  quote_source: string;
+  quote_expires_at: string;
+  dest_chain: string;
+  dest_token: string;
+  dest_wallet: string;
+  settlement_dest_chain?: string;
+  settlement_dest_token?: string;
+  settlement_dest_wallet?: string;
+  expire_time: string;
+  payment_url: string;
+  payment_code: string;
+  payment_instruction: PartnerPaymentInstructionResponse;
+}
