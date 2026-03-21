@@ -31,8 +31,9 @@ async function proxyRequest(
   
   const headers = new Headers();
   request.headers.forEach((value, key) => {
-    // Forward headers except host and cookie
-    if (key.toLowerCase() !== 'host' && key.toLowerCase() !== 'cookie') {
+    // Do not forward transport/compression headers that can break proxy decoding.
+    const lower = key.toLowerCase();
+    if (lower !== 'host' && lower !== 'cookie' && lower !== 'accept-encoding') {
       headers.set(key, value);
     }
   });
@@ -163,11 +164,27 @@ async function proxyRequest(
 
     const responseHeaders = new Headers();
     response.headers.forEach((value, key) => {
-      // Skip hop-by-hop headers
-      if (!['transfer-encoding', 'connection', 'keep-alive'].includes(key.toLowerCase())) {
+      // Skip hop-by-hop and compression/length headers. The runtime fetch may already
+      // return a decompressed body, so forwarding these headers as-is can produce
+      // ERR_CONTENT_DECODING_FAILED on Netlify/browser clients.
+      if (!['transfer-encoding', 'connection', 'keep-alive', 'content-encoding', 'content-length', 'content-type'].includes(key.toLowerCase())) {
         responseHeaders.set(key, value);
       }
     });
+    // Prevent edge/CDN layers from transforming proxy API bodies. This is important on
+    // Netlify where additional compression can reintroduce decoding mismatches.
+    responseHeaders.set('Cache-Control', 'no-store, no-transform');
+
+    if (contentType?.includes('application/json')) {
+      return NextResponse.json(data ?? {}, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: responseHeaders,
+      });
+    }
+
+    const passthroughContentType = contentType || 'application/octet-stream';
+    responseHeaders.set('Content-Type', passthroughContentType);
 
     return new NextResponse(rawData, {
       status: response.status,

@@ -1,0 +1,65 @@
+name: Deploy Frontend Production
+
+on:
+  push:
+    branches:
+      - production
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      REMOTE_APP_DIR: ${{ secrets.REMOTE_APP_DIR }}
+      CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
+      HOST_PORT: ${{ secrets.HOST_PORT }}
+      CONTAINER_PORT: ${{ secrets.CONTAINER_PORT }}
+      IMAGE_NAME: payment-kita-frontend
+    steps:
+      - name: Install SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "$(echo "${{ secrets.LOGIN_VPS }}" | cut -d@ -f2)" >> ~/.ssh/known_hosts
+
+      - name: Deploy to VPS
+        run: |
+          REMOTE_APP_DIR="${REMOTE_APP_DIR:-~/app/payment-kita.frontend}"
+          CONTAINER_NAME="${CONTAINER_NAME:-payment-kita.frontend.container}"
+          HOST_PORT="${HOST_PORT:-3000}"
+          CONTAINER_PORT="${CONTAINER_PORT:-3000}"
+
+          ssh "${{ secrets.LOGIN_VPS }}" <<EOF
+            set -e
+            cd "$REMOTE_APP_DIR"
+
+            git fetch origin production
+            git checkout production
+            git pull origin production
+
+            if [ -f .env ]; then
+              set -a
+              . ./.env
+              set +a
+            fi
+
+            docker stop "$CONTAINER_NAME" || true
+            docker rm "$CONTAINER_NAME" || true
+
+            docker build -t "$IMAGE_NAME:latest" .
+
+            ENV_FILE_ARG=""
+            if [ -f .env ]; then
+              ENV_FILE_ARG="--env-file .env"
+            fi
+
+            docker run -d \
+              --name "$CONTAINER_NAME" \
+              --restart unless-stopped \
+              -p "$HOST_PORT:$CONTAINER_PORT" \
+              $ENV_FILE_ARG \
+              "$IMAGE_NAME:latest"
+
+            docker image prune -f
+          EOF

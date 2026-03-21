@@ -1,0 +1,11 @@
+.git
+.gitignore
+.github
+.next
+coverage
+node_modules
+npm-debug.log*
+pnpm-debug.log*
+yarn-error.log*
+.DS_Store
+*.local
