@@ -205,7 +205,15 @@ export function APIView() {
   "quoted_token_decimals": 6,
   "quote_rate": "1 IDRX = 0.000059 USDC",
   "quote_source": "Uniswap Pool",
-  "payment_url": "https://pay.paymentkita.com/checkout/0195f1d4"
+  "payment_url": "https://pay.paymentkita.com/checkout/0195f1d4",
+  "payment_instruction": {
+    "chain_id": "eip155:8453",
+    "to": "0xGateway",
+    "value": "0",
+    "data": "0xafc93ccd...",
+    "approval_to": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "approval_hex_data": "0x095ea7b3..."
+  }
 }`}
               copied={copiedEndpoint === 'recommended-create-payment-response'}
               onCopy={() => handleCopy(`HTTP 200
@@ -219,7 +227,15 @@ export function APIView() {
   "quoted_token_decimals": 6,
   "quote_rate": "1 IDRX = 0.000059 USDC",
   "quote_source": "Uniswap Pool",
-  "payment_url": "https://pay.paymentkita.com/checkout/0195f1d4"
+  "payment_url": "https://pay.paymentkita.com/checkout/0195f1d4",
+  "payment_instruction": {
+    "chain_id": "eip155:8453",
+    "to": "0xGateway",
+    "value": "0",
+    "data": "0xafc93ccd...",
+    "approval_to": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "approval_hex_data": "0x095ea7b3..."
+  }
 }`, 'recommended-create-payment-response')}
               tone="response"
             />
@@ -265,7 +281,15 @@ export function APIView() {
   "quoted_token_decimals": 6,
   "quote_rate": "1 IDRX = 0.000059 USDT",
   "quote_source": "Uniswap Pool",
-  "payment_url": "https://pay.paymentkita.com/checkout/0195f1d4"
+  "payment_url": "https://pay.paymentkita.com/checkout/0195f1d4",
+  "payment_instruction": {
+    "chain_id": "eip155:42161",
+    "to": "0xGateway",
+    "value": "0",
+    "data": "0xafc93ccd...",
+    "approval_to": "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9",
+    "approval_hex_data": "0x095ea7b3..."
+  }
 }`}
               copied={copiedEndpoint === 'recommended-usdt-response'}
               onCopy={() => handleCopy(`HTTP 200
@@ -279,7 +303,15 @@ export function APIView() {
   "quoted_token_decimals": 6,
   "quote_rate": "1 IDRX = 0.000059 USDT",
   "quote_source": "Uniswap Pool",
-  "payment_url": "https://pay.paymentkita.com/checkout/0195f1d4"
+  "payment_url": "https://pay.paymentkita.com/checkout/0195f1d4",
+  "payment_instruction": {
+    "chain_id": "eip155:42161",
+    "to": "0xGateway",
+    "value": "0",
+    "data": "0xafc93ccd...",
+    "approval_to": "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9",
+    "approval_hex_data": "0x095ea7b3..."
+  }
 }`, 'recommended-usdt-response')}
               tone="response"
             />

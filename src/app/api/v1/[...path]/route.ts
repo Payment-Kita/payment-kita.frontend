@@ -193,9 +193,9 @@ async function proxyRequest(
       headers: responseHeaders,
     });
   } catch (error) {
-    console.error('[Proxy] Error forwarding request:', error);
+    console.error(`[Proxy] Error forwarding ${request.method} to ${fullUrl}:`, error);
     return NextResponse.json(
-      { error: 'Failed to connect to backend server' },
+      { error: 'Failed to connect to backend server', target: fullUrl },
       { status: 502 }
     );
   }

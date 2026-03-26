@@ -1413,7 +1413,7 @@ Jika GAGAL:
       create_flow_step2_title: 'Customer memilih stablecoin pembayaran',
       create_flow_step2_desc: 'Contoh: customer memilih USDC atau USDT pada chain tujuan. Route quote menentukan berapa stablecoin yang dibutuhkan.',
       create_flow_step3_title: 'Runtime mengembalikan instruksi pembayaran',
-      create_flow_step3_desc: 'Contoh: 50.000 IDRX menjadi 2,95 USDC berdasarkan route pool Uniswap aktif, lalu create session mengembalikan payment_url, payment_code, dan hex calldata.',
+      create_flow_step3_desc: 'Contoh: 50.000 IDRX menjadi 2,95 USDC berdasarkan route pool Uniswap aktif, lalu create session mengembalikan payment_url, payment_code, dan executable hex calldata (dengan persetujuan token opsional).',
       mental_model_badge: 'Mental Model',
       mental_model_formula: 'currency invoice -> pool quote -> amount stablecoin terpilih',
       mental_model_desc: 'Merchant menentukan sisi invoice terlebih dahulu. Setelah itu quote engine memetakan jumlah bisnis tersebut ke stablecoin yang dipilih customer menggunakan route pool on-chain aktif dan mengembalikan amount payable beserta payload eksekusinya.',

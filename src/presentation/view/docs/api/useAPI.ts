@@ -77,13 +77,15 @@ X-PK-Signature: ...
   "expire_time": "2026-03-20T10:20:00Z",
   "payment_url": "https://pay.paymentkita.com/checkout/0195f1d4",
   "payment_code": "eyJhbGciOi...",
-  "payment_instruction": {
-    "chain_id": "eip155:8453",
-    "to": "0xReceiver",
-    "value": "0x0",
-    "data": "0xafc93ccd..."
-  }
-}`
+    "payment_instruction": {
+      "chain_id": "eip155:8453",
+      "to": "0xReceiver",
+      "value": "0x0",
+      "data": "0xafc93ccd...",
+      "approval_to": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "approval_hex_data": "0x095ea7b3..."
+    }
+  }`
         },
         {
           id: 'partner-session-read',
@@ -107,7 +109,9 @@ X-PK-Signature: ...
     "chain_id": "eip155:8453",
     "to": "0xGateway",
     "value": "0",
-    "data": "0xafc93ccd..."
+    "data": "0xafc93ccd...",
+    "approval_to": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    "approval_hex_data": "0x095ea7b3..."
   }
 }`
         },
@@ -135,7 +139,9 @@ X-PK-Signature: ...
     "chain_id": "eip155:8453",
     "to": "0xGateway",
     "value": "0",
-    "data": "0xafc93ccd..."
+    "data": "0xafc93ccd...",
+    "approval_to": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+    "approval_hex_data": "0x095ea7b3..."
   }
 }`
         },

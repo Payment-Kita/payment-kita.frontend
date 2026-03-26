@@ -1413,7 +1413,7 @@ If FAILED:
       create_flow_step2_title: 'Customer selects payment stablecoin',
       create_flow_step2_desc: 'Example: customer chooses USDC or USDT on the destination chain. The quote route decides how much stablecoin is needed.',
       create_flow_step3_title: 'Runtime returns payable instruction',
-      create_flow_step3_desc: 'Example: 50.000 IDRX becomes 2,95 USDC based on the active Uniswap pool route, then create session returns payment_url, payment_code, and hex calldata.',
+      create_flow_step3_desc: 'Example: 50.000 IDRX becomes 2,95 USDC based on the active Uniswap pool route, then create session returns payment_url, payment_code, and executable hex calldata (with optional token approval).',
       mental_model_badge: 'Mental Model',
       mental_model_formula: 'invoice currency -> pool quote -> selected stablecoin amount',
       mental_model_desc: 'Merchant decides the invoice side first. The quote engine then maps that business amount into the stablecoin chosen by the customer using the active on-chain pool route and returns the payable amount plus execution payload.',
