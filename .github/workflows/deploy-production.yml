@@ -32,7 +32,7 @@ jobs:
 
           ssh "${{ secrets.LOGIN_VPS }}" <<EOF
             set -e
-            cd ~/app/payment-kita.frontend
+            cd "$REMOTE_APP_DIR"
 
             git fetch origin main
             git checkout main
@@ -49,17 +49,19 @@ jobs:
 
             docker build -t "$IMAGE_NAME:latest" .
 
-            ENV_FILE_ARG=""
-            if [ -f .env ]; then
-              ENV_FILE_ARG="--env-file .env"
+            if [ ! -f .env ]; then
+              echo "ERROR: $REMOTE_APP_DIR/.env not found"
+              exit 1
             fi
 
             docker run -d \
               --name "$CONTAINER_NAME" \
               --restart unless-stopped \
               -p "$HOST_PORT:$CONTAINER_PORT" \
-              $ENV_FILE_ARG \
+              --env-file "$REMOTE_APP_DIR/.env" \
               "$IMAGE_NAME:latest"
+
+            docker inspect "$CONTAINER_NAME" --format '{{range .Config.Env}}{{println .}}{{end}}' | egrep 'BACKEND_URL|NEXT_PUBLIC_BACKEND_URL|NEXT_PUBLIC_API_URL|NODE_ENV' || true
 
             docker image prune -f
             sudo sync; echo 3 > /proc/sys/vm/drop_caches

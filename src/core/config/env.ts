@@ -1,14 +1,26 @@
+const serverBackendUrl =
+  process.env.BACKEND_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  'http://localhost:8080';
+
+const publicBackendUrl =
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.BACKEND_URL ||
+  'http://localhost:8080';
+
 // Environment configuration
 export const ENV = {
   // API base URL - uses proxy route for client-side, direct backend for server-side
   API_BASE_URL: '/api',
 
   // Backend URL for server-side direct calls (only available server-side)
-  BACKEND_URL: process.env.BACKEND_URL || 'http://localhost:8080',
+  BACKEND_URL: serverBackendUrl,
 
   // Public API URL for direct public HTTP calls
-  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
-  NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || publicBackendUrl,
+  NEXT_PUBLIC_BACKEND_URL: publicBackendUrl,
 
   // Shared secret between frontend proxy and backend middleware
   INTERNAL_PROXY_SECRET: process.env.INTERNAL_PROXY_SECRET || '',
