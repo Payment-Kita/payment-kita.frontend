@@ -11,6 +11,11 @@ export interface RegisterRequest {
   walletAddress?: string;
   walletChainId?: string;
   walletSignature?: string;
+  // Merchant Profile
+  businessName?: string;
+  businessCategory?: string;
+  businessWebsite?: string;
+  businessDescription?: string;
 }
 
 export interface RefreshTokenRequest {

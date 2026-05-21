@@ -9,10 +9,11 @@ export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
   label?: string;
   inputSize?: 'default' | 'lg';
   description?: string;
+  icon?: React.ReactNode;
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, error, label, description, inputSize = 'default', ...props }, ref) => {
+  ({ className, type, error, label, description, icon, inputSize = 'default', ...props }, ref) => {
     const [showPassword, setShowPassword] = React.useState(false);
     const isPasswordType = type === 'password';
 
@@ -28,7 +29,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const inputType = isPasswordType ? (showPassword ? 'text' : 'password') : type;
 
     return (
-      <div className="flex flex-col gap-1.5 w-full">
+      <div className="flex flex-col gap-1.5 w-full group">
         {label && (
           <label className="text-sm font-medium text-foreground/80 ml-1">
             {label}
@@ -38,6 +39,11 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <p className="text-xs text-muted ml-1 mb-1">{description}</p>
         )}
         <div className="relative">
+          {icon && (
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-accent-purple transition-colors pointer-events-none">
+              {icon}
+            </div>
+          )}
           <input
             type={isPasswordType ? (showPassword ? 'text' : 'password') : type}
             className={cn(
@@ -50,6 +56,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               sizeStyles[inputSize],
               error && 'border-red-500 focus:border-red-500 focus:ring-red-500/50',
               isPasswordType && 'pr-12', // Add padding for the eye icon
+              icon && 'pl-11', // Add padding if icon is present
               className
             )}
             ref={ref}
