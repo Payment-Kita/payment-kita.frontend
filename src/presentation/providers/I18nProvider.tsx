@@ -16,7 +16,7 @@ const dictionaries: Record<Locale, Dictionary> = {
 type I18nContextType = {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: string, defaultValue?: string) => string;
+  t: (key: string, paramsOrValue?: Record<string, string | number> | string, defaultValue?: string) => string;
   dictionary: Dictionary;
 };
 
@@ -55,20 +55,50 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const dictionary = dictionaries[locale];
 
-  // Nested key access helper (e.g. 'common.dashboard')
-  const t = (key: string, defaultValue?: string): string => {
+  // Nested key access helper (e.g. 'common.dashboard') with interpolation and fallback.
+  const t = (key: string, paramsOrValue?: Record<string, string | number> | string, defaultValue?: string): string => {
+    let params: Record<string, string | number> | undefined;
+    let actualDefaultValue = defaultValue;
+
+    if (typeof paramsOrValue === 'string') {
+      actualDefaultValue = paramsOrValue;
+    } else {
+      params = paramsOrValue;
+    }
+
     const keys = key.split('.');
-    let value: any = dictionary;
     
-    for (const k of keys) {
-      if (value && typeof value === 'object' && k in value) {
-        value = value[k];
-      } else {
-        return defaultValue || key; // Fallback to defaultValue or key if not found
+    // Helper to get value from a dictionary
+    const getValue = (dict: any): any => {
+      let value: any = dict;
+      for (const k of keys) {
+        if (value && typeof value === 'object' && k in value) {
+          value = value[k];
+        } else {
+          return undefined;
+        }
       }
+      return typeof value === 'string' ? value : undefined;
+    };
+
+    // Try current locale, then fallback to English
+    let translated = getValue(dictionary);
+    if (translated === undefined && locale !== 'en') {
+      translated = getValue(en);
+    }
+
+    if (translated === undefined) {
+      return actualDefaultValue || key;
+    }
+
+    // Handle interpolation if params provided
+    if (params) {
+      Object.entries(params).forEach(([k, v]) => {
+        translated = translated.split(`{${k}}`).join(String(v));
+      });
     }
     
-    return typeof value === 'string' ? value : (defaultValue || key);
+    return translated;
   };
 
   return (
