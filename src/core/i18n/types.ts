@@ -232,6 +232,19 @@ export interface Dictionary {
       name_min: string;
       password_min_register: string;
       password_mismatch: string;
+      business_name_required: string;
+      business_category_required: string;
+    };
+    merchant: {
+      step_title: string;
+      business_name: string;
+      business_name_placeholder: string;
+      business_category: string;
+      business_category_placeholder: string;
+      business_website: string;
+      business_website_placeholder: string;
+      business_description: string;
+      business_description_placeholder: string;
     };
   };
   payment_requests: {
