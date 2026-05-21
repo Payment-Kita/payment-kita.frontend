@@ -6,7 +6,6 @@ import type {
   Token,
   SupportedToken,
   Wallet,
-  PaymentRequest,
   ApiKey,
   WebhookLog,
   PaymentPrivacyStatus,
@@ -136,11 +135,6 @@ export interface PaymentRequestResponse {
   chainId: string;
   walletAddress?: string;
   expiresAt: string;
-}
-
-export interface PaymentRequestsResponse {
-  paymentRequests: PaymentRequest[];
-  pagination: Pagination;
 }
 
 // Common
@@ -275,6 +269,7 @@ export interface CreatePartnerCreatePaymentResponse {
   quote_rate: string;
   quote_source: string;
   quote_expires_at: string;
+  is_unlimited_expiry?: boolean;
   dest_chain: string;
   dest_token: string;
   dest_wallet: string;

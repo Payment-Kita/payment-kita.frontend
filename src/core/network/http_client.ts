@@ -4,6 +4,8 @@ import { hmacSha256, sha256 } from '@/core/utils/crypto';
 export interface ApiResponse<T> {
   data?: T;
   error?: string;
+  status?: number;
+  code?: string;
 }
 
 export interface RequestOptions extends Omit<RequestInit, 'body'> {
@@ -86,7 +88,7 @@ export class HttpClient {
 
         if (isAuthRequest || isLoginPage) {
              // Just return the error, let the UI/Auth Provider handle it (or do nothing)
-             return { error: 'Unauthorized' };
+             return { error: 'Unauthorized', status: 401 };
         }
 
         try {
@@ -133,13 +135,18 @@ export class HttpClient {
       }
 
       if (!response.ok) {
-        return { error: (data.error || data.message || `Request failed with status ${response.status}`) as string };
+        const code = typeof data?.code === 'string' ? data.code : undefined;
+        return {
+          error: (data.error || data.message || `Request failed with status ${response.status}`) as string,
+          status: response.status,
+          code,
+        };
       }
 
       return { data: isJson ? data : (data.message || data) };
     } catch (error) {
       console.error('HTTP Client Error:', error);
-      return { error: 'Network error' };
+      return { error: 'Network error', status: 0 };
     }
   }
 

@@ -1,342 +1,250 @@
 'use client';
 
-import { Button, Input, Label, Card } from '@/presentation/components/atoms';
-import { useNewPayment } from './useNewPayment';
-import { ArrowLeft, Send, AlertTriangle, Wallet } from 'lucide-react';
-import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { Button } from '@/presentation/components/atoms';
 import { useTranslation } from '@/presentation/hooks';
 import { useChainsQuery, useTokensQuery } from '@/data/usecase';
-import { ChainSelector } from '@/presentation/components/organisms/ChainSelector';
-import { TokenSelector } from '@/presentation/components/organisms/TokenSelector';
-import { ChainItemData } from '@/presentation/components/molecules/ChainListItem';
-import { TokenItemData } from '@/presentation/components/molecules/TokenListItem';
-import { WalletConnectButton } from '@/presentation/components/molecules';
-import { useBalance } from 'wagmi';
-import { sanitizeNumber } from '@/core/utils/converters';
-import { validateAddress, sanitizeNumberWithDecimals, formatMoneyDisplay, stripMoneyFormat } from '@/core/utils/validators';
-import { formatUnits } from 'viem';
-import { useMemo, useCallback, useState, useEffect } from 'react';
+import type { ChainItemData } from '@/presentation/components/molecules/ChainListItem';
+import type { TokenItemData } from '@/presentation/components/molecules/TokenListItem';
+import { sanitizeNumberWithDecimals, formatMoneyDisplay, stripMoneyFormat } from '@/core/utils/validators';
+import type { CreatePaymentPricingType } from '@/data/model/request';
+import { useNewPayment } from './useNewPayment';
+import { CreatePaymentHeader } from './components/CreatePaymentHeader';
+import { CreatePaymentFormCard } from './components/CreatePaymentFormCard';
+import type { PricingTypeOption } from './components/PricingTypeSelector';
+import { BillInvoiceResultCard, BillInvoiceSkeleton, BillInvoiceEmptyState } from '../bill';
+import type { NewPaymentPageInit } from './types';
 
+interface NewPaymentViewProps {
+  initData?: NewPaymentPageInit;
+}
 
-export function NewPaymentView() {
+export function NewPaymentView({ initData }: NewPaymentViewProps) {
   const {
     form,
     loading,
     error,
+    createdBill,
+    settlementProfile,
+    settlementConfigured,
+    chainsData,
+    chainsError,
+    refetchChains,
     handleSubmit,
-    primaryWallet,
     handleSourceChainSelect,
-    handleDestChainSelect,
     handleTokenSelect,
     sourceChainId,
-    destChainId,
     sourceTokenAddress,
+    pricingType,
+    expiryMode,
+    expiresInCustom,
+    handleExpiryModeSelect,
+    handleExpiresInCustomChange,
     setValue,
-  } = useNewPayment();
+  } = useNewPayment({
+    initialChains: initData?.chains,
+    initialSettlementProfile: initData?.settlementProfile,
+  });
   const { t } = useTranslation();
 
-  // Data fetching
-  const { data: chains } = useChainsQuery();
-  const { data: tokens } = useTokensQuery();
+  const {
+    data: tokens,
+    error: tokensQueryError,
+    refetch: refetchTokens,
+    isFetching: isTokensFetching,
+  } = useTokensQuery(initData?.tokens);
 
-  // Map data to selector formats (include chainType for address validation)
-  const chainItems: ChainItemData[] = useMemo(() =>
-    chains?.items?.map(c => ({
-      id: c.id.toString(),
-      networkId: c.id.toString(),
-      name: c.name,
-      logoUrl: c.logoUrl,
-      chainType: c.chainType,
-    })) || [],
-    [chains]
+  const chainItems: ChainItemData[] = useMemo(
+    () =>
+      chainsData?.items?.map((chain) => ({
+        id: chain.id.toString(),
+        networkId: chain.id.toString(),
+        name: chain.name,
+        logoUrl: chain.logoUrl,
+        chainType: chain.chainType,
+      })) || [],
+    [chainsData]
   );
 
-  const tokenItems: TokenItemData[] = useMemo(() =>
-    (tokens?.items as any[])?.map((t: any) => ({
-      id: t.id,
-      symbol: t.symbol,
-      name: t.name,
-      logoUrl: t.logoUrl,
-      address: t.contractAddress,
-      isNative: t.isNative,
-      chainId: t.chainId,
-      decimals: t.decimals,
-    })) || [],
+  const tokenItems: TokenItemData[] = useMemo(
+    () =>
+      (tokens?.items as Array<any>)?.map((token) => ({
+        id: token.id,
+        symbol: token.symbol,
+        name: token.name,
+        logoUrl: token.logoUrl,
+        address: token.contractAddress,
+        isNative: token.isNative,
+        chainId: token.chainId,
+        decimals: token.decimals,
+      })) || [],
     [tokens]
   );
 
   const filteredTokens = useMemo(() => {
     if (!sourceChainId) return [];
-    return tokenItems.filter(t => t.chainId === sourceChainId);
+    return tokenItems.filter((token) => String(token.chainId) === String(sourceChainId));
   }, [tokenItems, sourceChainId]);
 
-  // Derive dest chain type for address validation
-  const destChainType = useMemo(() => {
-    if (!destChainId) return '';
-    const chain = chainItems.find(c => c.id === destChainId);
-    return (chain as any)?.chainType || '';
-  }, [chainItems, destChainId]);
-
-  // Derive selected token info for money formatter
   const selectedToken = useMemo(() => {
     if (!sourceTokenAddress) return null;
-    return tokenItems.find(
-      t => t.address === sourceTokenAddress ||
-        (t.isNative && sourceTokenAddress === '0x0000000000000000000000000000000000000000')
-    ) || null;
+    return (
+      tokenItems.find(
+        (token) =>
+          token.address === sourceTokenAddress ||
+          (token.isNative && sourceTokenAddress === '0x0000000000000000000000000000000000000000')
+      ) || null
+    );
   }, [tokenItems, sourceTokenAddress]);
 
+  const selectedTokenId = selectedToken?.id;
   const selectedTokenDecimals = selectedToken?.decimals ?? 18;
   const selectedTokenSymbol = selectedToken?.symbol ?? '';
+  const settlementDestChainNumericId = useMemo(() => {
+    const target = (settlementProfile?.dest_chain || '').trim().toLowerCase();
+    if (!target) return '';
+    const matched = chainsData?.items?.find((chain) => {
+      const byID = String(chain.id).trim().toLowerCase();
+      const byCAIP2 = String(chain.caip2 || '').trim().toLowerCase();
+      return target === byID || target === byCAIP2;
+    });
+    return matched ? String(matched.id) : '';
+  }, [chainsData?.items, settlementProfile?.dest_chain]);
 
-  // Wagmi hooks for balance
-  const { data: balanceData } = useBalance({
-    address: primaryWallet?.address as `0x${string}`,
-    // @ts-ignore - useBalance in v2 takes token
-    token: (sourceTokenAddress === '0x0000000000000000000000000000000000000000' || !sourceTokenAddress)
-      ? undefined
-      : sourceTokenAddress as `0x${string}`,
-    query: {
-      enabled: !!primaryWallet?.address && !!sourceChainId,
-    }
-  });
+  const settlementInvoiceToken = useMemo(() => {
+    const settlementTokenAddress = (settlementProfile?.dest_token || '').trim().toLowerCase();
+    if (!settlementTokenAddress) return null;
+    return (
+      tokenItems.find((token) => {
+        const byAddress = String(token.address || '').trim().toLowerCase() === settlementTokenAddress;
+        const byChain = !settlementDestChainNumericId || String(token.chainId) === String(settlementDestChainNumericId);
+        return byAddress && byChain;
+      }) || null
+    );
+  }, [settlementDestChainNumericId, settlementProfile?.dest_token, tokenItems]);
 
-  const formattedBalance = useMemo(() => {
-    if (!balanceData) return '0';
-    return formatUnits(balanceData.value, balanceData.decimals);
-  }, [balanceData]);
+  const invoiceCurrencyDecimals = settlementInvoiceToken?.decimals ?? 6;
+  const invoiceCurrencySymbol = (settlementProfile?.invoice_currency || settlementInvoiceToken?.symbol || '').trim();
+  const requestedAmountDecimals = pricingType === 'invoice_currency' ? invoiceCurrencyDecimals : selectedTokenDecimals;
+  const requestedAmountUnit = pricingType === 'invoice_currency' ? invoiceCurrencySymbol : selectedTokenSymbol;
+  const requestedAmountModeText =
+    pricingType === 'invoice_currency'
+      ? t('payments.requested_amount_mode_invoice_currency', 'Invoice Currency Amount')
+      : t('payments.requested_amount_mode_selected_token', 'Selected Token Amount');
+  const amountInputDisabled = pricingType === 'invoice_currency' ? false : !sourceTokenAddress;
+  const amountPlaceholder = amountInputDisabled ? t('payments.select_token_first') : '0';
 
-  // Controlled display state for money formatting
+  const pricingOptions: PricingTypeOption[] = [
+    {
+      id: 'invoice_currency',
+      title: t('payments.pricing_invoice_currency_title', 'Invoice Currency'),
+      description: t('payments.pricing_invoice_currency_desc', 'Requested amount follows merchant invoice currency.'),
+    },
+    {
+      id: 'payment_token_fixed',
+      title: t('payments.pricing_payment_token_fixed_title', 'Payment Token Fixed'),
+      description: t('payments.pricing_payment_token_fixed_desc', 'Requested amount is fixed in customer selected token.'),
+    },
+    {
+      id: 'payment_token_dynamic',
+      title: t('payments.pricing_payment_token_dynamic_title', 'Payment Token Dynamic'),
+      description: t('payments.pricing_payment_token_dynamic_desc', 'Requested amount uses dynamic selected token amount.'),
+    },
+  ];
+
   const [displayAmount, setDisplayAmount] = useState('');
-
-  // Reset display when token changes
   useEffect(() => {
-    setDisplayAmount('');
-  }, [sourceTokenAddress]);
-
-  const handleMaxClick = () => {
-    if (formattedBalance) {
-      const sanitized = sanitizeNumber(formattedBalance);
-      setValue('amount', sanitized, { shouldValidate: true });
-      setDisplayAmount(formatMoneyDisplay(sanitized));
-    }
-  };
-
-  // Amount onChange: strip formatting → sanitize decimals → store raw in form → format for display
-  const handleAmountChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = stripMoneyFormat(e.target.value);
-    const sanitized = sanitizeNumberWithDecimals(raw, selectedTokenDecimals);
-    setValue('amount', sanitized, { shouldValidate: true });
-    setDisplayAmount(formatMoneyDisplay(sanitized));
-  }, [selectedTokenDecimals, setValue]);
-
-  // Real-time address validation — uses independent state (form.setError gets overridden by zodResolver)
-  const receiverAddress = form.watch('receiverAddress');
-  const [addressError, setAddressError] = useState<string | undefined>(undefined);
-  useEffect(() => {
-    if (!receiverAddress || !destChainType) {
-      setAddressError(undefined);
+    if (pricingType === 'invoice_currency') {
       return;
     }
-    const result = validateAddress(receiverAddress, destChainType);
-    if (result !== true) {
-      setAddressError(result as string);
-    } else {
-      setAddressError(undefined);
-    }
-  }, [receiverAddress, destChainType]);
+    setDisplayAmount('');
+  }, [pricingType, sourceTokenAddress]);
+
+  useEffect(() => {
+    setDisplayAmount('');
+    setValue('amount', '', { shouldValidate: true });
+    setValue('requested_amount', '', { shouldValidate: true });
+    form.clearErrors('amount');
+    form.clearErrors('requested_amount');
+  }, [form, pricingType, setValue]);
+
+  const handlePricingTypeSelect = useCallback(
+    (nextPricingType: CreatePaymentPricingType) => {
+      setValue('pricing_type', nextPricingType, { shouldValidate: true });
+      form.clearErrors('pricing_type');
+    },
+    [form, setValue]
+  );
+
+  const handleAmountChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const raw = stripMoneyFormat(event.target.value);
+      const sanitized = sanitizeNumberWithDecimals(raw, requestedAmountDecimals);
+      setValue('amount', sanitized, { shouldValidate: true });
+      setValue('requested_amount', sanitized, { shouldValidate: true });
+      setDisplayAmount(formatMoneyDisplay(sanitized));
+    },
+    [requestedAmountDecimals, setValue]
+  );
+
+  const dataLoadErrorMessage = useMemo(() => {
+    if (chainsError) return chainsError;
+    if (tokensQueryError instanceof Error) return tokensQueryError.message;
+    return null;
+  }, [chainsError, tokensQueryError]);
+
+  const handleRetryDataLoad = useCallback(() => {
+    void refetchChains();
+    void refetchTokens();
+  }, [refetchChains, refetchTokens]);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link
-          href="/dashboard"
-          className="p-2 -ml-2 rounded-full hover:bg-white/5 transition-all duration-300 group"
-        >
-          <ArrowLeft className="w-5 h-5 text-muted group-hover:text-foreground transition-colors" />
-        </Link>
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-purple/10 border border-accent-purple/20 mb-2">
-            <Send className="w-3 h-3 text-accent-purple" />
-            <span className="text-xs text-accent-purple font-medium">{t('payments.new_transfer_badge')}</span>
-          </div>
-          <h1 className="heading-2 text-foreground">{t('payments.new_payment')}</h1>
+    <div className="space-y-8 animate-fade-in">
+      <CreatePaymentHeader />
+
+      {dataLoadErrorMessage && (
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 space-y-3">
+          <p className="text-sm text-amber-100">
+            {t('payments.init_data_load_failed', 'Some initial data failed to load. Please retry.')}
+          </p>
+          <p className="text-xs text-amber-200/80 break-all">{dataLoadErrorMessage}</p>
+          <Button type="button" size="sm" variant="outline" onClick={handleRetryDataLoad} loading={isTokensFetching}>
+            {t('common.retry', 'Retry')}
+          </Button>
         </div>
-      </div>
+      )}
 
-      {/* Form Card */}
-      <Card variant="glass" size="lg" className="p-8 shadow-glass">
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Payment Details Section */}
-          <div className="space-y-6">
-            <h2 className="heading-3 text-foreground flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-accent-purple/10 flex items-center justify-center">
-                <span className="text-accent-purple text-sm font-bold">1</span>
-              </div>
-              {t('payments.details')}
-            </h2>
+      <CreatePaymentFormCard
+        form={form}
+        onSubmit={handleSubmit}
+        loading={loading}
+        error={error}
+        settlementProfile={settlementProfile}
+        settlementConfigured={settlementConfigured}
+        pricingType={pricingType}
+        pricingOptions={pricingOptions}
+        onPricingTypeSelect={handlePricingTypeSelect}
+        chainItems={chainItems}
+        sourceChainId={sourceChainId}
+        onSourceChainSelect={handleSourceChainSelect}
+        filteredTokens={filteredTokens}
+        selectedTokenId={selectedTokenId}
+        onTokenSelect={handleTokenSelect}
+        displayAmount={displayAmount}
+        requestedAmountUnit={requestedAmountUnit}
+        requestedAmountModeText={requestedAmountModeText}
+        amountInputDisabled={amountInputDisabled}
+        amountPlaceholder={amountPlaceholder}
+        onAmountChange={handleAmountChange}
+        expiryMode={expiryMode}
+        expiresInCustom={expiresInCustom}
+        onExpiryModeSelect={handleExpiryModeSelect}
+        onExpiresInCustomChange={handleExpiresInCustomChange}
+      />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <ChainSelector
-                  label={t('payments.source_chain')}
-                  chains={chainItems}
-                  selectedChainId={sourceChainId}
-                  onSelect={handleSourceChainSelect}
-                  placeholder={t('payments.select_source_chain')}
-                />
-                {form.formState.errors.sourceChainId && (
-                  <p className="text-sm font-medium text-destructive animate-in slide-in-from-top-1 fade-in-20">
-                    {form.formState.errors.sourceChainId.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-1.5">
-                <ChainSelector
-                  label={t('payments.dest_chain')}
-                  chains={chainItems}
-                  selectedChainId={destChainId}
-                  onSelect={handleDestChainSelect}
-                  placeholder={t('payments.select_destination_chain')}
-                />
-                {form.formState.errors.destChainId && (
-                  <p className="text-sm font-medium text-destructive animate-in slide-in-from-top-1 fade-in-20">
-                    {form.formState.errors.destChainId.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Receiver Address — disabled until dest chain selected */}
-            <Input
-              label={t('payments.receiver')}
-              placeholder={destChainId ? '0x...' : t('payments.select_destination_chain_first')}
-              disabled={!destChainId}
-              {...form.register('receiverAddress')}
-              error={addressError || form.formState.errors.receiverAddress?.message}
-            />
-
-            {/* Token and Amount */}
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-1.5">
-                <TokenSelector
-                  label={t('payments.token_address')}
-                  tokens={filteredTokens}
-                  selectedTokenId={tokenItems.find(t => t.address === sourceTokenAddress || (t.isNative && sourceTokenAddress === '0x0000000000000000000000000000000000000000'))?.id}
-                  onSelect={handleTokenSelect}
-                  disabled={!sourceChainId}
-                  placeholder={sourceChainId ? t('payments.select_token') : t('payments.select_chain_first')}
-                />
-                {form.formState.errors.sourceTokenAddress && (
-                  <p className="text-sm font-medium text-destructive animate-in slide-in-from-top-1 fade-in-20">
-                    {form.formState.errors.sourceTokenAddress.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-1.5">
-                <Label className="flex justify-between items-center text-sm font-medium text-foreground/80 ml-1 mb-1.5">
-                  {t('payments.amount')}
-                  {balanceData && (
-                    <span className="text-xs text-muted-foreground">
-                      Max: {formattedBalance} {balanceData.symbol}
-                    </span>
-                  )}
-                </Label>
-                <div className="relative">
-                  <Input
-                    type="text"
-                    placeholder={sourceTokenAddress ? '0' : t('payments.select_token_first')}
-                    disabled={!sourceTokenAddress}
-                    value={displayAmount}
-                    onChange={handleAmountChange}
-                    className="pr-24"
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                    {selectedTokenSymbol && (
-                      <span className="text-xs font-medium text-muted-foreground select-none">
-                        {selectedTokenSymbol}
-                      </span>
-                    )}
-                    {balanceData && (
-                      <button
-                        type="button"
-                        onClick={handleMaxClick}
-                        className="text-xs font-bold text-accent-purple hover:text-accent-purple/80 transition-colors bg-accent-purple/10 hover:bg-accent-purple/20 px-2 py-1 rounded"
-                      >
-                        MAX
-                      </button>
-                    )}
-                  </div>
-                </div>
-                {form.formState.errors.amount && (
-                  <p className="text-sm font-medium text-destructive animate-in slide-in-from-top-1 fade-in-20">
-                    {form.formState.errors.amount.message}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Notices */}
-          {!primaryWallet && (
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 animate-fade-in">
-              <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0">
-                <Wallet className="w-5 h-5 text-amber-400" />
-              </div>
-              <div>
-                <p className="text-amber-200 font-medium">{t('payments.connect_wallet_notice')}</p>
-                <p className="text-amber-200/60 text-sm mt-1">{t('payments.connect_wallet_continue_notice')}</p>
-                <div className="mt-3">
-                  <WalletConnectButton size="sm" connectLabel={t('common.connect')} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/30 animate-fade-in">
-              <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-red-400" />
-              </div>
-              <div>
-                <p className="text-red-400 font-medium">{t('payments.error_label')}</p>
-                <p className="text-red-400/80 text-sm mt-1">{error}</p>
-              </div>
-            </div>
-          )}
-
-          {form.formState.errors.root && (
-            <div className="flex items-start gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/30 animate-fade-in">
-              <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-red-400" />
-              </div>
-              <div>
-                <p className="text-red-400 font-medium">{t('payments.form_error_label')}</p>
-                <p className="text-red-400/80 text-sm mt-1">{form.formState.errors.root.message}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="pt-4 flex justify-end gap-3 border-t border-white/10">
-            <Link href="/dashboard">
-              <Button type="button" variant="ghost">{t('common.cancel')}</Button>
-            </Link>
-            <Button
-              type="submit"
-              variant="primary"
-              loading={loading}
-              disabled={!primaryWallet || loading}
-              glow
-            >
-              <Send className="w-4 h-4" />
-              {t('payments.confirm')}
-            </Button>
-          </div>
-        </form>
-      </Card>
+      {!createdBill && loading && <BillInvoiceSkeleton />}
+      {!createdBill && !loading && !error && <BillInvoiceEmptyState />}
+      {createdBill && <BillInvoiceResultCard bill={createdBill} />}
     </div>
   );
 }

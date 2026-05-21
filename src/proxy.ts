@@ -68,7 +68,6 @@ export const config = {
     '/settings/:path*',
     '/wallets/:path*',
     '/payments/:path*',
-    '/payment-requests/:path*',
     '/merchant/:path*',
   ],
 };

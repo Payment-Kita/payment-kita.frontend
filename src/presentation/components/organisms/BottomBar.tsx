@@ -32,7 +32,7 @@ export default function BottomBar({ onMoreClick }: BottomBarProps) {
   };
 
   // Check if any secondary route is active (for "More" button highlight)
-  const isSecondaryActive = ['/merchant', '/payment-requests', '/settings'].some(
+  const isSecondaryActive = ['/merchant', '/settings'].some(
     (path) => pathname.startsWith(path)
   );
 

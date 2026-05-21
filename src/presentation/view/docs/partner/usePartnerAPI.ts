@@ -17,17 +17,17 @@ export function usePartnerAPI() {
 
   const headers = [
     { name: 'X-PK-Key', value: 'your_api_key', desc: 'Your partner API key' },
-    { name: 'X-PK-Signature', value: 'hmac_signature', desc: 'HMAC-SHA256 of timestamp + method + path + body_hash' },
+    { name: 'X-PK-Signature', value: 'hmac_signature', desc: 'HMAC-SHA256 of timestamp.method.path.body_hash' },
     { name: 'X-PK-Timestamp', value: 'unix_timestamp', desc: 'Current Unix timestamp in seconds' },
     { name: 'Content-Type', value: 'application/json', desc: 'Must be application/json' }
   ];
 
   const requestSchema = [
-    { field: 'merchant_id', type: 'string', required: false, desc: 'Optional merchant UUID override for admin/internal use. Normal merchant-authenticated requests should omit it.' },
     { field: 'chain_id', type: 'string', required: true, desc: 'CAIP-2 chain id selected by the customer, for example eip155:8453.' },
     { field: 'selected_token', type: 'string', required: true, desc: 'Token address or mint selected by the customer on chain_id.' },
     { field: 'pricing_type', type: 'string', required: true, desc: 'One of invoice_currency, payment_token_fixed, or payment_token_dynamic.' },
     { field: 'requested_amount', type: 'string', required: true, desc: 'Human-readable decimal string. Backend converts it into atomic units based on pricing_type and token decimals.' },
+    { field: 'expires_in', type: 'string', required: false, desc: 'Optional expiry control in seconds: omit for default 180 (3 minutes), send numeric seconds (30-86400), or use "unlimited".' },
   ];
 
   const webhookSchema = [

@@ -67,15 +67,17 @@ export function GuidesView() {
                         <div className="h-3 w-3 rounded-full bg-green-400/40" />
                     </div>
                     <pre className="text-primary-100 leading-[1.8] overflow-x-auto">
-{`// 1. Initialize session
-const session = await pk.create({
-  amount: "100.00",
-  currency: "USDC",
-  redirect: "https://yoursite.com"
+{`// 1. Create merchant bill
+const payment = await partner.createPayment({
+  chain_id: "eip155:8453",
+  selected_token: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  pricing_type: "invoice_currency",
+  requested_amount: "50000",
+  expires_in: "180", // seconds (3 minutes)
 });
 
-// 2. Launch Checkout
-window.location.href = session.url;`}
+// 2. Send hosted checkout URL
+window.location.href = payment.payment_url;`}
                     </pre>
                 </div>
               </div>
@@ -154,7 +156,7 @@ window.location.href = session.url;`}
             { title: t('docs.guides.resource_api_title', 'API Docs'), desc: t('docs.guides.resource_api_desc', 'Full reference'), href: '/docs/api', icon: Code, color: 'text-primary' },
             { title: t('docs.guides.resource_community_title', 'Community'), desc: t('docs.guides.resource_community_desc', 'Join Discord'), href: 'https://discord.gg/payment-kita', icon: Layout, color: 'text-accent-blue' },
             { title: t('docs.guides.resource_support_title', 'Support'), desc: t('docs.guides.resource_support_desc', 'Get help'), href: 'mailto:support@payment-kita.com', icon: HelpCircle, color: 'text-accent-green' },
-            { title: t('docs.guides.resource_partner_title', 'Partner API'), desc: t('docs.guides.resource_partner_desc', 'Quote and session flow'), href: '/docs/partner-api', icon: Sparkles, color: 'text-warning' }
+            { title: t('docs.guides.resource_partner_title', 'Partner API'), desc: t('docs.guides.resource_partner_desc', 'Create-payment and hosted checkout flow'), href: '/docs/partner-api', icon: Sparkles, color: 'text-warning' }
             ].map((res) => (
             <Link key={res.title} href={res.href} target={res.href.startsWith('http') ? "_blank" : "_self"}>
                 <div className="p-6 rounded-4xl border border-white/10 bg-white/2 hover:bg-primary/5 hover:border-primary/20 transition-all group text-center space-y-4">

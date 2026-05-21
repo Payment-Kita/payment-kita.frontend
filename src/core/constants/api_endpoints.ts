@@ -17,9 +17,7 @@ export const API_ENDPOINTS = {
   PAYMENT_PRIVACY_CLAIM: (id: string) => `/v1/payments/${id}/privacy/claim`,
   PAYMENT_PRIVACY_REFUND: (id: string) => `/v1/payments/${id}/privacy/refund`,
 
-  // Payment Requests
-  PAYMENT_REQUESTS: '/v1/payment-requests',
-  PAYMENT_REQUEST_BY_ID: (id: string) => `/v1/payment-requests/${id}`,
+  // Legacy Public Pay Fallbacks
   CREATE_PAYMENT_BY_ID: (id: string) => `/v1/create-payment/${id}`,
   PAY_PUBLIC: (id: string) => `/v1/pay/${id}`,
   PAYMENT_RESOLVE_PUBLIC: (id: string) => `/v1/payment/${id}`,
@@ -38,6 +36,7 @@ export const API_ENDPOINTS = {
   MERCHANT_STATUS: '/v1/merchants/status',
   MERCHANT_UPDATE_SETTINGS: '/v1/merchants/settings',
   MERCHANT_SETTLEMENT_PROFILE: '/v1/merchants/settlement-profile',
+  MERCHANT_CREATE_PAYMENT: '/v1/merchants/create-payment',
 
   // Webhooks
   WEBHOOK_LOGS: '/v1/merchants/webhooks/logs',

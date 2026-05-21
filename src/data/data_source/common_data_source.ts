@@ -1,6 +1,6 @@
 /**
  * Common Data Source
- * Acts as HTTP connector for Chain, Token, Wallet, Merchant, PaymentRequest
+ * Acts as HTTP connector for Chain, Token, Wallet, Merchant, and legacy public pay fallbacks.
  */
 import { httpClient } from '@/core/network';
 import type { ApiResponse } from '@/core/network';
@@ -8,7 +8,6 @@ import { API_ENDPOINTS } from '@/core/constants';
 import type {
   ConnectWalletRequest,
   ApplyMerchantRequest,
-  CreatePaymentRequestRequest,
   MerchantSettlementProfileRequest,
 } from '../model/request';
 import type {
@@ -19,7 +18,6 @@ import type {
   MerchantStatusResponse,
   MessageResponse,
   PaymentRequestResponse,
-  PaymentRequestsResponse,
   MerchantSettlementProfileResponse,
 } from '../model/response';
 import type { Merchant } from '../model/entity';
@@ -96,24 +94,10 @@ class MerchantDataSource {
 
 export const merchantDataSource = new MerchantDataSource();
 
-// ============== Payment Request Data Source ==============
+// ============== Legacy Public Pay Data Source ==============
 class PaymentRequestDataSource {
-  async create(request: CreatePaymentRequestRequest) {
-    return httpClient.post<PaymentRequestResponse>(API_ENDPOINTS.PAYMENT_REQUESTS, request);
-  }
-
-  async getById(id: string) {
-    return httpClient.get<PaymentRequestResponse>(API_ENDPOINTS.PAYMENT_REQUEST_BY_ID(id));
-  }
-
   async getCreatePaymentById(id: string): Promise<ApiResponse<PaymentRequestResponse>> {
     return httpClient.get<PaymentRequestResponse>(API_ENDPOINTS.CREATE_PAYMENT_BY_ID(id));
-  }
-
-  async list(page = 1, limit = 10) {
-    return httpClient.get<PaymentRequestsResponse>(
-      `${API_ENDPOINTS.PAYMENT_REQUESTS}?page=${page}&limit=${limit}`
-    );
   }
 
   async getPublic(id: string): Promise<ApiResponse<PaymentRequestResponse>> {

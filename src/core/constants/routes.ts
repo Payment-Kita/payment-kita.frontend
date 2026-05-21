@@ -15,8 +15,6 @@ export const ROUTES = {
   PAYMENTS: '/payments',
   NEW_PAYMENT: '/payments/new',
   PAYMENT_DETAIL: (id: string) => `/payments/${id}`,
-
-  PAYMENT_REQUESTS: '/payment-requests',
   WALLETS: '/wallets',
   MERCHANT: '/merchant',
   MERCHANT_SETTINGS: '/merchant/settings',

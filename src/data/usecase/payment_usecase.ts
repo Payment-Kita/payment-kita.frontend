@@ -4,7 +4,7 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { paymentRepository } from '../repositories/repository_impl';
-import type { CreatePaymentRequest } from '../model/request';
+import type { CreatePaymentRequest, CreatePartnerCreatePaymentRequest } from '../model/request';
 import type {
   PaymentEvent,
   PaymentPrivacyRecoveryAction,
@@ -160,6 +160,17 @@ export function useCreatePaymentMutation() {
 
   return useMutation({
     mutationFn: (input: CreatePaymentRequest) => paymentRepository.createPayment(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['payments'] });
+    },
+  });
+}
+
+export function useCreateMerchantPaymentBillMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: CreatePartnerCreatePaymentRequest) => paymentRepository.createMerchantPaymentBill(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['payments'] });
     },

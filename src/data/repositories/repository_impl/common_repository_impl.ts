@@ -15,7 +15,7 @@ import type {
   IWalletRepository,
   IMerchantRepository,
 } from '../repository/common_repository';
-import type { ConnectWalletRequest, ApplyMerchantRequest, CreatePaymentRequestRequest, MerchantSettlementProfileRequest } from '../../model/request';
+import type { ConnectWalletRequest, ApplyMerchantRequest, MerchantSettlementProfileRequest } from '../../model/request';
 
 // ============== Chain Repository ==============
 class ChainRepositoryImpl implements IChainRepository {
@@ -89,22 +89,10 @@ class MerchantRepositoryImpl implements IMerchantRepository {
 
 export const merchantRepository = new MerchantRepositoryImpl();
 
-// ============== Payment Request Repository ==============
+// ============== Legacy Public Pay Repository ==============
 class PaymentRequestRepositoryImpl {
-  async createPaymentRequest(input: CreatePaymentRequestRequest) {
-    return paymentRequestDataSource.create(input);
-  }
-
-  async getPaymentRequest(id: string) {
-    return paymentRequestDataSource.getById(id);
-  }
-
   async getCreatePaymentById(id: string) {
     return paymentRequestDataSource.getCreatePaymentById(id);
-  }
-
-  async listPaymentRequests(page = 1, limit = 10) {
-    return paymentRequestDataSource.list(page, limit);
   }
 
   async getPublicPaymentRequest(id: string) {

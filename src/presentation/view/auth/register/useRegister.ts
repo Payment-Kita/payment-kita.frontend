@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { useRegisterMutation } from '@/data/usecase';
@@ -55,10 +56,21 @@ export function useRegister() {
     name: z.string().min(2, t('auth.validation.name_min')),
     email: z.string().email(t('auth.validation.email_invalid')),
     password: z.string().min(8, t('auth.validation.password_min_register')),
-    confirmPassword: z.string()
+    confirmPassword: z.string(),
+    isMerchant: z.boolean(),
+    businessName: z.string(),
+    businessType: z.string(),
   }).refine((data) => data.password === data.confirmPassword, {
     message: t('auth.validation.password_mismatch'),
     path: ['confirmPassword'],
+  }).refine((data) => {
+    if (data.isMerchant && (!data.businessName || data.businessName.length < 3)) {
+      return false;
+    }
+    return true;
+  }, {
+    message: t('auth.validation.business_name_required'),
+    path: ['businessName'],
   });
 
   const merchantSchema = z.object({
@@ -72,7 +84,7 @@ export function useRegister() {
     e.preventDefault();
     const values = form.getValues();
     const result = await registerSchema.safeParseAsync(values);
-    
+
     if (!result.success) {
       result.error.issues.forEach((issue) => {
         form.setError(issue.path[0] as keyof RegisterFormData, { message: issue.message });
@@ -94,7 +106,7 @@ export function useRegister() {
     e.preventDefault();
     const values = form.getValues();
     const result = await merchantSchema.safeParseAsync(values);
-    
+
     if (!result.success) {
       result.error.issues.forEach((issue) => {
         form.setError(issue.path[0] as keyof RegisterFormData, { message: issue.message });
@@ -114,7 +126,7 @@ export function useRegister() {
         `${t('auth.sign_wallet_message_wallet')}: ${address}`,
         `${t('auth.sign_wallet_message_timestamp')}: ${Date.now()}`,
       ].join('\n');
-      
+
       const signature = await signMessageAsync({ message });
 
       // Convert chainId to EIP155 format if possible
@@ -168,5 +180,6 @@ export function useRegister() {
     handleAccountSubmit,
     handleWalletNext,
     handleFinalSubmit,
+    RegistrationStep,
   };
 }

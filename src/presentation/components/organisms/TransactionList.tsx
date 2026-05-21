@@ -103,6 +103,27 @@ export default function TransactionList({
     }
   };
 
+  const getRecordType = (payment: Payment): 'bill_request' | 'runtime_payment' => {
+    if ((payment.bridgeType || '').trim().toUpperCase() === 'BILL_REQUEST') {
+      return 'bill_request';
+    }
+    return 'runtime_payment';
+  };
+
+  const getRecordTypeBadge = (payment: Payment) => {
+    const recordType = getRecordType(payment);
+    if (recordType === 'bill_request') {
+      return {
+        label: t('payments.record_type_bill_request', 'Bill Request'),
+        className: 'bg-blue-500/10 text-blue-300 border-blue-400/20',
+      };
+    }
+    return {
+      label: t('payments.record_type_runtime_payment', 'Runtime Payment'),
+      className: 'bg-accent-purple/10 text-accent-purple border-accent-purple/20',
+    };
+  };
+
   if (payments.length === 0) {
     return (
       <div className="card p-12 text-center animate-fade-in">
@@ -122,9 +143,19 @@ export default function TransactionList({
         {displayPayments.map((payment, index) => (
           <div
             key={payment.paymentId}
-            className="card-hover p-4 flex items-center justify-between group"
+            className="card-hover relative p-4 flex items-center justify-between group"
             style={{ animationDelay: `${index * 50}ms` }}
           >
+            {(() => {
+              const badge = getRecordTypeBadge(payment);
+              return (
+                <div className="absolute left-4 top-3">
+                  <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border ${badge.className}`}>
+                    {badge.label}
+                  </span>
+                </div>
+              );
+            })()}
             <div className="flex items-center gap-4">
               {/* Icon */}
               <div className="w-12 h-12 rounded-xl bg-gradient-purple-blue/10 border border-accent-purple/20 flex items-center justify-center group-hover:shadow-glow-sm transition-all duration-300">
@@ -134,7 +165,7 @@ export default function TransactionList({
               </div>
               
               {/* Transaction Details */}
-              <div>
+              <div className="pt-4">
                 <div className="flex items-center gap-2 text-foreground font-medium">
                   <span>{payment.sourceAmount}</span>
                   <ArrowRight className="w-4 h-4 text-muted" />

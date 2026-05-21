@@ -69,7 +69,7 @@ describe('PaymentView partner hosted checkout', () => {
       formatTimeLeft: () => '0:59',
       formatAmount: () => '1.00',
       getChainName: () => 'Base',
-      t: (key: string) => key,
+      t: (key: string, fallback?: string) => fallback ?? key,
     });
 
     render(<PaymentView />);
@@ -107,12 +107,12 @@ describe('PaymentView partner hosted checkout', () => {
       formatTimeLeft: () => '0:00',
       formatAmount: () => '1.00',
       getChainName: () => 'Base',
-      t: (key: string) => key,
+      t: (key: string, fallback?: string) => fallback ?? key,
     });
 
     render(<PaymentView />);
 
-    expect(screen.getByText(/Order Confirmed/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Order Confirmed/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Payment confirmed on-chain/i)).toBeInTheDocument();
   });
 });

@@ -1,12 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createHash, createHmac } from 'crypto';
+import { createHash, createHmac, randomUUID } from 'crypto';
 import { ENV } from '@/core/config/env';
 
 const BACKEND_URL = ENV.BACKEND_URL;
 const INTERNAL_PROXY_SECRET = ENV.INTERNAL_PROXY_SECRET;
 const ADMIN_API_KEY = ENV.ADMIN_API_KEY.trim();
 const ADMIN_SECRET_KEY = ENV.ADMIN_SECRET_KEY.trim();
+
+function isPublicAppEndpoint(targetPath: string): boolean {
+  return (
+    targetPath.startsWith('/api/v1/payment-app') ||
+    targetPath.includes('/privacy-status') ||
+    targetPath.includes('/privacy/') ||
+    targetPath === '/api/v1/chains' ||
+    targetPath.startsWith('/api/v1/tokens')
+  );
+}
+
+function isMerchantSessionEndpoint(targetPath: string): boolean {
+  return targetPath.startsWith('/api/v1/merchants/');
+}
 
 /**
  * Proxy API Route Handler
@@ -20,6 +34,7 @@ async function proxyRequest(
   const { path } = await params;
   const targetPath = `/api/v1/${path.join('/')}`;
   const targetUrl = `${BACKEND_URL}${targetPath}`;
+  const requestId = request.headers.get('X-Request-Id') || randomUUID();
 
   // Get search params
   const searchParams = request.nextUrl.searchParams.toString();
@@ -41,6 +56,7 @@ async function proxyRequest(
   if (INTERNAL_PROXY_SECRET) {
     headers.set('X-Internal-Proxy-Secret', INTERNAL_PROXY_SECRET);
   }
+  headers.set('X-Request-Id', requestId);
 
   // Inject Session ID if available (Priority)
   if (sessionId) {
@@ -68,13 +84,15 @@ async function proxyRequest(
     }
 
     const hasForwardedApiHeaders = headers.has('X-Api-Key') && headers.has('X-Timestamp') && headers.has('X-Signature');
-    const isPublicAppEndpoint = targetPath.startsWith('/api/v1/payment-app') || 
-      targetPath.includes('/privacy-status') || 
-      targetPath.includes('/privacy/') || 
-      targetPath === '/api/v1/chains' || 
-      targetPath.startsWith('/api/v1/tokens');
+    const shouldUseAdminFallback =
+      !sessionId &&
+      !hasForwardedApiHeaders &&
+      isPublicAppEndpoint(targetPath) &&
+      !isMerchantSessionEndpoint(targetPath) &&
+      ADMIN_API_KEY &&
+      ADMIN_SECRET_KEY;
 
-    if (!sessionId && !hasForwardedApiHeaders && isPublicAppEndpoint && ADMIN_API_KEY && ADMIN_SECRET_KEY) {
+    if (shouldUseAdminFallback) {
       const timestamp = Math.floor(Date.now() / 1000).toString();
       const pathForSigning = searchParams ? `${targetPath}?${searchParams}` : targetPath;
       const bodyHash = createHash('sha256').update(body).digest('hex');
@@ -150,7 +168,7 @@ async function proxyRequest(
 
     // Standard Response Handling
     if (
-      isPublicAppEndpoint &&
+      isPublicAppEndpoint(targetPath) &&
       usedAdminFallback &&
       response.status === 401 &&
       typeof data?.error === 'string' &&
@@ -174,6 +192,7 @@ async function proxyRequest(
         responseHeaders.set(key, value);
       }
     });
+    responseHeaders.set('X-Request-Id', requestId);
     // Prevent edge/CDN layers from transforming proxy API bodies. This is important on
     // Netlify where additional compression can reintroduce decoding mismatches.
     responseHeaders.set('Cache-Control', 'no-store, no-transform');
@@ -197,7 +216,7 @@ async function proxyRequest(
   } catch (error) {
     console.error(`[Proxy] Error forwarding ${request.method} to ${fullUrl}:`, error);
     return NextResponse.json(
-      { error: 'Failed to connect to backend server', target: fullUrl },
+      { error: 'Failed to connect to backend server', target: fullUrl, request_id: requestId },
       { status: 502 }
     );
   }

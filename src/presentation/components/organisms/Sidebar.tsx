@@ -9,7 +9,6 @@ import {
   CreditCard,
   Wallet,
   Store,
-  FileText,
   Settings,
   LogOut,
   Globe,
@@ -37,7 +36,6 @@ export const mainNavItems = [
 
 export const secondaryNavItems = [
   { href: '/merchant', labelKey: 'nav.merchant', icon: Store },
-  { href: '/payment-requests', labelKey: 'nav.paymentRequests', icon: FileText },
   { href: '/settings', labelKey: 'common.settings', icon: Settings },
 ];
 

@@ -4,9 +4,14 @@
  */
 import { httpClient } from '@/core/network';
 import { API_ENDPOINTS } from '@/core/constants';
-import type { CreatePaymentRequest, PaymentPrivacyRecoveryRequest } from '../model/request';
+import type {
+  CreatePaymentRequest,
+  CreatePartnerCreatePaymentRequest,
+  PaymentPrivacyRecoveryRequest,
+} from '../model/request';
 import type {
   CreatePaymentResponse,
+  CreatePartnerCreatePaymentResponse,
   PaymentResponse,
   PaymentsResponse,
   PaymentEventsResponse,
@@ -17,6 +22,10 @@ import type {
 class PaymentDataSource {
   async create(request: CreatePaymentRequest) {
     return httpClient.post<CreatePaymentResponse>(API_ENDPOINTS.PAYMENTS, request);
+  }
+
+  async createMerchantPaymentBill(request: CreatePartnerCreatePaymentRequest) {
+    return httpClient.post<CreatePartnerCreatePaymentResponse>(API_ENDPOINTS.MERCHANT_CREATE_PAYMENT, request);
   }
 
   async getById(id: string) {

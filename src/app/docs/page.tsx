@@ -7,8 +7,8 @@ import { Button } from '@/presentation/components/atoms';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/presentation/components/molecules/card';
 
 const quickCards = [
-  { href: '/docs/partner-api', icon: FileCode2, title: 'Partner API', desc: 'Authoritative additive contract for quote, session, hosted read, resolve-code, and webhook flows.', bullets: ['HMAC partner auth', 'Quote -> session -> hosted read', 'Webhook contract and retry policy'] },
-  { href: '/docs/api', icon: Cable, title: 'API Reference', desc: 'Interactive endpoint catalog with examples, request bodies, response shapes, and test actions.', bullets: ['Partner routes', 'Legacy compatibility routes', 'Example payloads and live testing'] },
+  { href: '/docs/partner-api', icon: FileCode2, title: 'Partner API', desc: 'Authoritative additive contract for create-payment, hosted read, resolve-code, and webhook flows.', bullets: ['HMAC partner auth', 'Create-payment -> hosted read', 'Webhook contract and retry policy'] },
+  { href: '/docs/api', icon: Cable, title: 'API Reference', desc: 'Interactive endpoint catalog with examples, request bodies, response shapes, and test actions.', bullets: ['Partner routes', 'Runtime support routes', 'Example payloads and live testing'] },
   { href: '/docs/guides', icon: BookOpen, title: 'Guides', desc: 'Integration paths for hosted checkout, partner migration, webhook handling, and operational rollout.', bullets: ['Hosted checkout migration', 'Partner cutover notes', 'Operational guides'] },
 ];
 
@@ -16,7 +16,7 @@ const featureCards = [
   { icon: Cable, title: 'Cross-Chain Runtime', desc: 'Bridge routing, destination swap, and partner hosted checkout are documented from the current runtime contract.' },
   { icon: ShieldCheck, title: 'Secure By Default', desc: 'Partner writes use HMAC signing and QR resolution uses encrypted payment_code payloads.' },
   { icon: Zap, title: 'Operator Ready', desc: 'Legacy endpoint deprecation, diagnostics, and migration guidance are exposed for staged cutover.' },
-  { icon: Coins, title: 'Token-Native Flows', desc: 'Quote and session examples follow the current cross-token and cross-chain session model.' },
+  { icon: Coins, title: 'Token-Native Flows', desc: 'Create-payment examples cover invoice currency and token-based pricing modes across chains.' },
 ];
 
 export default function DocsPage() {
@@ -95,25 +95,20 @@ export default function DocsPage() {
         <h2 className="heading-2 text-foreground">{t('docs.home.example', 'Quick Example')}</h2>
         <Card className="rounded-[2rem] border-white/10 bg-white/5">
           <CardHeader>
-            <CardTitle>{t('docs.home.example_title', 'Partner two-step flow')}</CardTitle>
-            <CardDescription>{t('docs.home.example_desc', 'Create a quote first, then lock that quote into a hosted checkout session.')}</CardDescription>
+            <CardTitle>{t('docs.home.example_title', 'Partner one-call flow')}</CardTitle>
+            <CardDescription>{t('docs.home.example_desc', 'Create payment bill in one call, then return payment_url/payment_code to customer channel.')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
-            <pre className="overflow-x-auto rounded-2xl border border-white/10 bg-black/40 p-6 text-sm text-primary-100">{`const quote = await client.partner.createQuote({
-  invoice_currency: 'IDRX',
-  invoice_amount: '50000000000',
-  selected_chain: 'eip155:8453',
-  selected_token: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913',
-  dest_wallet: '0xMerchantDestination',
+            <pre className="overflow-x-auto rounded-2xl border border-white/10 bg-black/40 p-6 text-sm text-primary-100">{`const payment = await client.partner.createPayment({
+  chain_id: 'eip155:8453',
+  selected_token: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+  pricing_type: 'invoice_currency',
+  requested_amount: '50000',
+  expires_in: '180', // optional, in seconds: omit => 180s (3 min), or "unlimited"
 });
 
-const session = await client.partner.createSession({
-  quote_id: quote.quote_id,
-  dest_wallet: '0xMerchantDestination',
-});
-
-console.log(session.payment_url);
-console.log(session.payment_code);`}</pre>
+console.log(payment.payment_url);
+console.log(payment.payment_code);`}</pre>
             <div className="flex flex-wrap gap-3">
               <Link href="/docs/api"><Button>{t('docs.home.view_api', 'View API Reference')}</Button></Link>
               <Link href="/docs/partner-api"><Button variant="outline">{t('docs.home.view_partner', 'View Partner API')}</Button></Link>

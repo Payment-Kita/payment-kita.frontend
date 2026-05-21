@@ -4,11 +4,19 @@
  */
 import { paymentDataSource } from '../../data_source';
 import type { IPaymentRepository } from '../repository/payment_repository';
-import type { CreatePaymentRequest, PaymentPrivacyRecoveryRequest } from '../../model/request';
+import type {
+  CreatePaymentRequest,
+  CreatePartnerCreatePaymentRequest,
+  PaymentPrivacyRecoveryRequest,
+} from '../../model/request';
 
 class PaymentRepositoryImpl implements IPaymentRepository {
   async createPayment(input: CreatePaymentRequest) {
     return paymentDataSource.create(input);
+  }
+
+  async createMerchantPaymentBill(input: CreatePartnerCreatePaymentRequest) {
+    return paymentDataSource.createMerchantPaymentBill(input);
   }
 
   async getPayment(id: string) {

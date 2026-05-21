@@ -18,7 +18,7 @@ export function PartnerAPIView() {
           {t('docs.partner.title', 'Partner API Documentation')}
         </h1>
         <p className="body-lg text-muted max-w-4xl leading-relaxed">
-          {t('docs.partner.subtitle', 'Runtime contract for the additive partner flow. This flow is separate from `/v1/payment-app` and is the authoritative path for partner quote, hosted checkout session, hosted read model, and QR resolve.')}
+          {t('docs.partner.subtitle', 'Runtime contract for the additive partner flow. This flow is separate from `/v1/payment-app` and is the authoritative path for create-payment, hosted checkout session, hosted read model, and QR resolve.')}
         </p>
       </div>
 
@@ -37,7 +37,7 @@ export function PartnerAPIView() {
                     {t('docs.partner.hmac_title', 'HMAC Authentication')}
                   </h3>
                   <p className="text-muted mt-2 text-sm leading-relaxed">
-                    {t('docs.partner.hmac_desc', 'Partner write routes require canonical signing with `timestamp + method + path + body_hash`.')}
+                    {t('docs.partner.hmac_desc', 'Partner write routes require canonical signing with `timestamp + "." + method + "." + path + "." + body_hash`.')}
                   </p>
                 </div>
 
@@ -81,7 +81,7 @@ function sha256Hex(input) {
 function generateSignature({ timestamp, method, path, body }, secret) {
   const bodyString = JSON.stringify(body ?? {});
   const bodyHash = sha256Hex(bodyString);
-  const message = \`${'${timestamp}'}${'${method.toUpperCase()}'}${'${path}'}${'${bodyHash}'}\`;
+  const message = [timestamp, method.toUpperCase(), path, bodyHash].join('.');
   return crypto.createHmac('sha256', secret).update(message).digest('hex');
 }`}
                   </pre>
@@ -132,6 +132,12 @@ function generateSignature({ timestamp, method, path, body }, secret) {
               <Badge variant="success" className="px-6 py-2 rounded-xl text-xs">POST</Badge>
             </div>
 
+            <div className="rounded-2xl border border-sky-400/20 bg-sky-500/10 p-5">
+              <p className="text-sm text-sky-50/95 leading-relaxed">
+                {t('docs.partner.expires_in_note', '`expires_in` uses seconds. Example: `180` = 3 minutes, `3600` = 1 hour. If omitted, backend default is 180 seconds (3 minutes). Use `"unlimited"` for non-expiring bill (`is_unlimited_expiry: true`).')}
+              </p>
+            </div>
+
             <div className="space-y-4">
               <h4 className="text-sm font-bold text-muted uppercase tracking-widest px-1">Request Schema</h4>
               <Card variant="glass" className="p-0 overflow-hidden rounded-3xl border-white/5 bg-black/20">
@@ -165,11 +171,11 @@ function generateSignature({ timestamp, method, path, body }, secret) {
   -H "X-PK-Signature: ..." \\
   -H "X-PK-Timestamp: 1234567890" \\
   -d '{
-    "merchant_id": "019d0c4e-9726-76bf-ab20-0bed0752af1a",
     "chain_id": "eip155:8453",
     "selected_token": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
     "pricing_type": "invoice_currency",
-    "requested_amount": "50000"
+    "requested_amount": "50000",
+    "expires_in": "180"
   }'`}
               </pre>
               <pre className="p-6 bg-black/60 rounded-3xl border border-white/10 text-xs font-mono text-accent-green/90 overflow-x-auto leading-loose">
@@ -188,6 +194,7 @@ function generateSignature({ timestamp, method, path, body }, secret) {
   "quote_rate": "1 IDRX = 0.000059 USDC",
   "quote_source": "Uniswap Pool",
   "quote_expires_at": "2026-03-20T10:20:00Z",
+  "is_unlimited_expiry": false,
   "dest_chain": "eip155:8453",
   "dest_token": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   "dest_wallet": "0xMerchantDestination",
@@ -235,7 +242,7 @@ function sign(method: string, path: string, body: unknown) {
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const bodyString = JSON.stringify(body ?? {});
   const bodyHash = sha256Hex(bodyString);
-  const message = \`\${timestamp}\${method.toUpperCase()}\${path}\${bodyHash}\`;
+  const message = \`\${timestamp}.\${method.toUpperCase()}.\${path}.\${bodyHash}\`;
   const signature = crypto.createHmac('sha256', SECRET_KEY).update(message).digest('hex');
   return { timestamp, signature, bodyString };
 }
@@ -258,11 +265,11 @@ async function partnerPost(path: string, body: unknown) {
 
 export async function createCustomerPayment() {
   const payment = await partnerPost('/api/v1/create-payment', {
-    merchant_id: '019d0c4e-9726-76bf-ab20-0bed0752af1a',
     chain_id: 'eip155:8453',
     selected_token: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
     pricing_type: 'invoice_currency',
     requested_amount: '50000',
+    expires_in: '180', // seconds (3 minutes)
   });
 
   return {
@@ -338,11 +345,11 @@ Indexer / Webhook -> Merchant Backend: payment completion callback`}</pre>
               <h3 className="text-xl font-bold text-foreground">POST /api/v1/create-payment</h3>
               <pre className="p-6 bg-black/60 rounded-3xl border border-white/10 text-xs font-mono text-primary-100 overflow-x-auto leading-loose">
 {`{
-  "merchant_id": "0195-merchant",
   "chain_id": "eip155:8453",
   "selected_token": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
   "pricing_type": "invoice_currency",
-  "requested_amount": "50000"
+  "requested_amount": "50000",
+  "expires_in": "180"
 }`}
               </pre>
               <pre className="p-6 bg-black/60 rounded-3xl border border-white/10 text-xs font-mono text-accent-green/90 overflow-x-auto leading-loose">
@@ -358,6 +365,7 @@ Indexer / Webhook -> Merchant Backend: payment completion callback`}</pre>
   "quote_rate": "1 IDRX = 0.000059 USDC",
   "quote_source": "uniswap-v4-base-usdc-idrx",
   "quote_expires_at": "2026-03-20T10:20:00Z",
+  "is_unlimited_expiry": false,
   "dest_chain": "eip155:8453",
   "dest_token": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
   "dest_wallet": "0xMerchantDestination",
@@ -520,9 +528,9 @@ Indexer / Webhook -> Merchant Backend: payment completion callback`}</pre>
             </div>
 
             <div className="p-6 rounded-3xl bg-white/5 border border-white/10">
-              <h4 className="text-lg font-bold text-foreground">Legacy Notice</h4>
+              <h4 className="text-lg font-bold text-foreground">Integration Scope</h4>
               <p className="text-sm text-muted mt-2 leading-relaxed">
-                {t('docs.partner.legacy_notice_desc', 'Legacy routes `/api/v1/payment-requests`, `/api/v1/pay/:id`, and `/api/v1/resolve-payment-code` remain available only for compatibility. New partner integrations should not build on top of them.')}
+                {t('docs.partner.integration_scope_desc', 'Partner integrations should use the hosted create-payment and payment-session flow shown above. Legacy compatibility endpoints are intentionally hidden from this documentation.')}
               </p>
             </div>
           </div>

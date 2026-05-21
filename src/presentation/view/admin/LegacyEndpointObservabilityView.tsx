@@ -7,7 +7,7 @@ import { Card, Badge, Button } from '@/presentation/components/atoms';
 
 export function LegacyEndpointObservabilityView() {
   const { data, isLoading } = useAdminLegacyEndpointObservability();
-  const [selectedFamily, setSelectedFamily] = useState<'resolve_payment_code' | 'pay_read' | 'payment_requests'>('resolve_payment_code');
+  const [selectedFamily, setSelectedFamily] = useState<'resolve_payment_code' | 'pay_read'>('resolve_payment_code');
   const [selectedMode, setSelectedMode] = useState<'warn' | 'disabled'>('warn');
   const cutoverChecklist = [
     'Observe the diagnostics page for at least 3 full business days.',
@@ -19,7 +19,6 @@ export function LegacyEndpointObservabilityView() {
   const envVarMap = {
     resolve_payment_code: 'LEGACY_RESOLVE_PAYMENT_CODE_MODE',
     pay_read: 'LEGACY_PAY_READ_MODE',
-    payment_requests: 'LEGACY_PAYMENT_REQUESTS_MODE',
   } as const;
   const generatedSnippet = `${envVarMap[selectedFamily]}=${selectedMode}`;
 
@@ -165,7 +164,6 @@ export function LegacyEndpointObservabilityView() {
             <div className="mt-3 grid gap-2 font-mono text-xs text-primary-100">
               <code>LEGACY_RESOLVE_PAYMENT_CODE_MODE=warn|disabled</code>
               <code>LEGACY_PAY_READ_MODE=warn|disabled</code>
-              <code>LEGACY_PAYMENT_REQUESTS_MODE=warn|disabled</code>
             </div>
           </div>
 

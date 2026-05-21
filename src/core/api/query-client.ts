@@ -61,15 +61,6 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.payments.details(), id] as const,
   },
   
-  // Payment Requests
-  paymentRequests: {
-    all: ['paymentRequests'] as const,
-    lists: () => [...queryKeys.paymentRequests.all, 'list'] as const,
-    list: (filters: Record<string, any>) => [...queryKeys.paymentRequests.lists(), filters] as const,
-    details: () => [...queryKeys.paymentRequests.all, 'detail'] as const,
-    detail: (id: string) => [...queryKeys.paymentRequests.details(), id] as const,
-  },
-  
   // Merchants
   merchants: {
     all: ['merchants'] as const,

@@ -2,9 +2,14 @@
  * Payment Repository Interface
  */
 import type { ApiResponse } from '@/core/network';
-import type { CreatePaymentRequest, PaymentPrivacyRecoveryRequest } from '../../model/request';
+import type {
+  CreatePaymentRequest,
+  CreatePartnerCreatePaymentRequest,
+  PaymentPrivacyRecoveryRequest,
+} from '../../model/request';
 import type {
   CreatePaymentResponse,
+  CreatePartnerCreatePaymentResponse,
   PaymentResponse,
   PaymentsResponse,
   PaymentEventsResponse,
@@ -14,6 +19,7 @@ import type {
 
 export interface IPaymentRepository {
   createPayment(input: CreatePaymentRequest): Promise<ApiResponse<CreatePaymentResponse>>;
+  createMerchantPaymentBill(input: CreatePartnerCreatePaymentRequest): Promise<ApiResponse<CreatePartnerCreatePaymentResponse>>;
   getPayment(id: string): Promise<ApiResponse<PaymentResponse>>;
   listPayments(page?: number, limit?: number): Promise<ApiResponse<PaymentsResponse>>;
   getPaymentEvents(id: string): Promise<ApiResponse<PaymentEventsResponse>>;

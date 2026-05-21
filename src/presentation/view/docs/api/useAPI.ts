@@ -40,18 +40,18 @@ export function useAPI() {
           auth: 'partner' as const,
           description: t('docs.api.endpoint_create_payment_desc', 'Create a payment in one merchant-facing call. Backend resolves merchant config, pricing mode, quote path, and final payment instruction.'),
           testMethod: 'POST' as const,
-          bodyTemplate: JSON.stringify({ merchant_id: '019d0c4e-9726-76bf-ab20-0bed0752af1a', chain_id: 'eip155:8453', selected_token: '0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913', pricing_type: 'invoice_currency', requested_amount: '50000' }, null, 2),
+          bodyTemplate: JSON.stringify({ chain_id: 'eip155:8453', selected_token: '0x833589fcd6edb6e08f4c7c32d4f71b54bdA02913', pricing_type: 'invoice_currency', requested_amount: '50000', expires_in: '180' }, null, 2),
           requestExample: `POST /api/v1/create-payment
 X-PK-Key: pk_live_...
 X-PK-Timestamp: 1710000000
 X-PK-Signature: ...
 
 {
-  "merchant_id": "019d0c4e-9726-76bf-ab20-0bed0752af1a",
   "chain_id": "eip155:8453",
   "selected_token": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   "pricing_type": "invoice_currency",
-  "requested_amount": "50000"
+  "requested_amount": "50000",
+  "expires_in": "180"
 }` ,
           responseExample: `{
   "payment_id": "0195f1d4-6d3a-7f5f-b8e9-9b4c04d5a111",
@@ -68,6 +68,7 @@ X-PK-Signature: ...
   "quote_rate": "1 IDRX = 0.000059 USDC",
   "quote_source": "Uniswap Pool",
   "quote_expires_at": "2026-03-20T10:20:00Z",
+  "is_unlimited_expiry": false,
   "dest_chain": "eip155:8453",
   "dest_token": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   "dest_wallet": "0xMerchantDestination",
@@ -200,49 +201,6 @@ X-PK-Signature: ...
   "payment_url": "https://pay.paymentkita.com/checkout/0195-session",
   "payment_code": "eyJhbGciOi...",
   "status": "PENDING"
-}`
-        },
-      ]
-    },
-    {
-      category: t('docs.api.category_legacy', 'Legacy Compatibility'),
-      items: [
-        {
-          id: 'legacy-payment-requests',
-          method: 'POST' as const,
-          path: '/api/v1/payment-requests',
-          auth: 'jwt' as const,
-          description: t('docs.api.endpoint_legacy_payment_requests_desc', 'Deprecated legacy payment request creation. Kept only for staged cutover.'),
-          testMethod: 'POST' as const,
-          bodyTemplate: JSON.stringify({ chainId: 'eip155:8453', tokenAddress: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', amount: '1000', decimals: 6, description: 'Legacy test' }, null, 2),
-          responseExample: `{
-  "requestId": "legacy-request-id",
-  "txData": { "to": "0xGateway", "data": "0x..." },
-  "expiresAt": "2026-03-20T10:20:00Z"
-}`
-        },
-        {
-          id: 'legacy-pay-read',
-          method: 'GET' as const,
-          path: '/api/v1/pay/:id',
-          auth: 'public' as const,
-          description: t('docs.api.endpoint_legacy_pay_read_desc', 'Deprecated legacy hosted read model. Use partner session read instead.'),
-          testMethod: 'GET' as const,
-          responseExample: `{
-  "requestId": "legacy-request-id",
-  "paymentCode": "pay:legacy-request-id"
-}`
-        },
-        {
-          id: 'legacy-resolve',
-          method: 'GET' as const,
-          path: '/api/v1/resolve-payment-code?code=...',
-          auth: 'public' as const,
-          description: t('docs.api.endpoint_legacy_resolve_desc', 'Deprecated legacy resolve contract. Use partner resolve-code instead.'),
-          testMethod: 'GET' as const,
-          responseExample: `{
-  "session_id": "legacy-session",
-  "instruction": { "to": "0xGateway", "data": "0x..." }
 }`
         },
       ]

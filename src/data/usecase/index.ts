@@ -28,6 +28,7 @@ export {
   useClaimPrivacyEscrowMutation,
   useRefundPrivacyEscrowMutation,
   useCreatePaymentMutation,
+  useCreateMerchantPaymentBillMutation,
 } from './payment_usecase';
 
 // Common usecases

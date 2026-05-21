@@ -98,7 +98,7 @@ export function APIView() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="heading-1 text-foreground">{t('docs.api.title', 'API Reference')}</h1>
-          <p className="body-lg text-muted mt-2">{t('docs.api.subtitle', 'Interactive runtime reference for partner and legacy compatibility routes.')}</p>
+          <p className="body-lg text-muted mt-2">{t('docs.api.subtitle', 'Interactive runtime reference for partner and runtime support routes.')}</p>
         </div>
         <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-4 py-2 rounded-2xl backdrop-blur-md">
           <Shield className="w-4 h-4 text-primary" />
@@ -160,7 +160,7 @@ export function APIView() {
               },
               {
                 title: t('docs.api.create_flow_step3_title', '3. Runtime returns payable instruction'),
-                desc: t('docs.api.create_flow_step3_desc', 'Example: 50.000 IDRX becomes 2,95 USDC based on the active Uniswap pool route, then create session returns payment_url, payment_code, and hex calldata.'),
+                desc: t('docs.api.create_flow_step3_desc', 'Example: 50.000 IDRX becomes 2,95 USDC based on the active Uniswap pool route, then create-payment returns payment_url, payment_code, and hex calldata.'),
               },
             ].map((item, index) => (
               <div key={item.title} className="rounded-2xl border border-white/10 bg-black/20 p-5">
@@ -174,10 +174,19 @@ export function APIView() {
           <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
             <div className="text-xs uppercase tracking-[0.2em] text-muted font-black">{t('docs.api.mental_model_badge', 'Mental Model')}</div>
             <p className="mt-3 text-base font-semibold text-foreground">
-              {t('docs.api.mental_model_formula', 'invoice currency -> pool quote -> selected stablecoin amount')}
+              {t('docs.api.mental_model_formula', 'invoice currency -> runtime quote -> selected stablecoin amount')}
             </p>
             <p className="mt-2 text-sm text-muted max-w-4xl">
               {t('docs.api.mental_model_desc', 'Merchant decides the invoice side first. The quote engine then maps that business amount into the stablecoin chosen by the customer using the active on-chain pool route and returns the payable amount plus execution payload.')}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-sky-400/20 bg-sky-500/10 p-5">
+            <p className="text-sm font-semibold text-sky-100">
+              {t('docs.api.expires_in_title', '`expires_in` unit and behavior')}
+            </p>
+            <p className="mt-2 text-sm text-sky-50/90 leading-relaxed">
+              {t('docs.api.expires_in_desc', '`expires_in` uses seconds. Example: `180` = 3 minutes, `3600` = 1 hour. If omitted, backend default is 180 seconds (3 minutes). Use `\"unlimited\"` to create a bill without expiry (`is_unlimited_expiry: true`).')}
             </p>
           </div>
 
@@ -185,20 +194,20 @@ export function APIView() {
             <DocsCodeBlock
               code={`POST /api/v1/create-payment
 {
-  "merchant_id": "019d0c4e-9726-76bf-ab20-0bed0752af1a",
   "chain_id": "eip155:8453",
   "selected_token": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   "pricing_type": "invoice_currency",
-  "requested_amount": "50000"
+  "requested_amount": "50000",
+  "expires_in": "180"
 }`}
               copied={copiedEndpoint === 'recommended-create-payment-request'}
               onCopy={() => handleCopy(`POST /api/v1/create-payment
 {
-  "merchant_id": "019d0c4e-9726-76bf-ab20-0bed0752af1a",
   "chain_id": "eip155:8453",
   "selected_token": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   "pricing_type": "invoice_currency",
-  "requested_amount": "50000"
+  "requested_amount": "50000",
+  "expires_in": "180"
 }`, 'recommended-create-payment-request')}
             />
             <DocsCodeBlock
@@ -213,6 +222,7 @@ export function APIView() {
   "quoted_token_decimals": 6,
   "quote_rate": "1 IDRX = 0.000059 USDC",
   "quote_source": "Uniswap Pool",
+  "is_unlimited_expiry": false,
   "payment_url": "https://pay.paymentkita.com/checkout/0195f1d4",
   "payment_instruction": {
     "chain_id": "eip155:8453",
@@ -235,6 +245,7 @@ export function APIView() {
   "quoted_token_decimals": 6,
   "quote_rate": "1 IDRX = 0.000059 USDC",
   "quote_source": "Uniswap Pool",
+  "is_unlimited_expiry": false,
   "payment_url": "https://pay.paymentkita.com/checkout/0195f1d4",
   "payment_instruction": {
     "chain_id": "eip155:8453",
@@ -261,20 +272,20 @@ export function APIView() {
             <DocsCodeBlock
               code={`POST /api/v1/create-payment
 {
-  "merchant_id": "019d0c4e-9726-76bf-ab20-0bed0752af1a",
   "chain_id": "eip155:42161",
   "selected_token": "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9",
   "pricing_type": "payment_token_fixed",
-  "requested_amount": "2.95"
+  "requested_amount": "2.95",
+  "expires_in": "unlimited"
 }`}
               copied={copiedEndpoint === 'recommended-usdt-request'}
               onCopy={() => handleCopy(`POST /api/v1/create-payment
 {
-  "merchant_id": "019d0c4e-9726-76bf-ab20-0bed0752af1a",
   "chain_id": "eip155:42161",
   "selected_token": "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9",
   "pricing_type": "payment_token_fixed",
-  "requested_amount": "2.95"
+  "requested_amount": "2.95",
+  "expires_in": "unlimited"
 }`, 'recommended-usdt-request')}
             />
             <DocsCodeBlock
@@ -289,6 +300,7 @@ export function APIView() {
   "quoted_token_decimals": 6,
   "quote_rate": "1 IDRX = 0.000059 USDT",
   "quote_source": "Uniswap Pool",
+  "is_unlimited_expiry": true,
   "payment_url": "https://pay.paymentkita.com/checkout/0195f1d4",
   "payment_instruction": {
     "chain_id": "eip155:42161",
@@ -311,6 +323,7 @@ export function APIView() {
   "quoted_token_decimals": 6,
   "quote_rate": "1 IDRX = 0.000059 USDT",
   "quote_source": "Uniswap Pool",
+  "is_unlimited_expiry": true,
   "payment_url": "https://pay.paymentkita.com/checkout/0195f1d4",
   "payment_instruction": {
     "chain_id": "eip155:42161",

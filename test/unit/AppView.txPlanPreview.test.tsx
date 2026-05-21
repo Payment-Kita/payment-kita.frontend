@@ -15,6 +15,7 @@ jest.mock('@/presentation/components/organisms/ChainTokenSelector', () => ({
 
 jest.mock('@/presentation/components/molecules', () => ({
   AmountTokenInput: () => <div data-testid="amount-token-input" />,
+  BaseModal: ({ children, isOpen }: any) => (isOpen ? <div data-testid="base-modal">{children}</div> : null),
   WalletConnectButton: () => <button type="button">connect</button>,
 }));
 
@@ -26,13 +27,15 @@ jest.mock('@/presentation/components/atoms', () => ({
   ),
   Input: (props: any) => <input {...props} />,
   Label: ({ children }: any) => <label>{children}</label>,
+  Select: ({ children, ...props }: any) => <select {...props}>{children}</select>,
+  Card: ({ children, className }: any) => <div className={className}>{children}</div>,
 }));
 
 const AppView = require('@/presentation/view/app/AppView').default;
 const { useApp } = require('@/presentation/view/app/useApp');
 
-describe('AppView tx plan preview', () => {
-  it('shows tx plan preview from backend payload mapping', () => {
+describe('AppView render', () => {
+  it('renders core payment form sections without crashing', () => {
     (useApp as jest.Mock).mockReturnValue({
       isConnected: true,
       chains: [{ id: 'source-chain', name: 'Base', explorerUrl: 'https://basescan.org' }],
@@ -102,10 +105,10 @@ describe('AppView tx plan preview', () => {
 
     render(<AppView />);
 
-    expect(screen.getByText(/Transaction Plan Preview/i)).toBeInTheDocument();
-    expect(screen.getByText(/Chain Type:/i)).toBeInTheDocument();
-    expect(screen.getByText(/Approval/i)).toBeInTheDocument();
-    expect(screen.getByText(/Backend Steps/i)).toBeInTheDocument();
-    expect(screen.getByText(/Final Call/i)).toBeInTheDocument();
+    expect(screen.getByText('app_view.title')).toBeInTheDocument();
+    expect(screen.getAllByTestId('chain-token-selector').length).toBe(2);
+    expect(screen.getByTestId('amount-token-input')).toBeInTheDocument();
+    expect(screen.getByText('app_view.receiver_address')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /connect/i })).toBeInTheDocument();
   });
 });

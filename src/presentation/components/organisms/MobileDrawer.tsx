@@ -6,7 +6,6 @@ import { useAuthStore, useTranslation } from '@/presentation/hooks';
 import { WalletConnectButton } from '@/presentation/components/molecules/WalletConnectButton';
 import {
   Store,
-  FileText,
   Settings,
   LogOut,
   Globe,
@@ -27,7 +26,6 @@ interface MobileDrawerProps {
 
 const drawerNavItems = [
   { href: '/merchant', labelKey: 'nav.merchant', icon: Store },
-  { href: '/payment-requests', labelKey: 'nav.paymentRequests', icon: FileText },
   { href: '/settings', labelKey: 'common.settings', icon: Settings },
 ];
 

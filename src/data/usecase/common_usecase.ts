@@ -7,12 +7,12 @@ import {
   tokenRepository,
   walletRepository,
   merchantRepository,
-  paymentRequestRepository,
 } from '../repositories/repository_impl';
-import type { ConnectWalletRequest, ApplyMerchantRequest, CreatePaymentRequestRequest } from '../model/request';
+import type { ConnectWalletRequest, ApplyMerchantRequest } from '../model/request';
+import type { ChainsResponse, TokensResponse } from '../model/response';
 
 // ============== Chain Usecases ==============
-export function useChainsQuery() {
+export function useChainsQuery(initialData?: ChainsResponse) {
   return useQuery({
     queryKey: ['chains'],
     queryFn: async () => {
@@ -21,11 +21,12 @@ export function useChainsQuery() {
       if (!response.data) throw new Error('Failed to fetch chains');
       return response.data;
     },
+    initialData,
   });
 }
 
 // ============== Token Usecases ==============
-export function useTokensQuery() {
+export function useTokensQuery(initialData?: TokensResponse) {
   return useQuery({
     queryKey: ['tokens'],
     queryFn: async () => {
@@ -34,6 +35,7 @@ export function useTokensQuery() {
       if (!response.data) throw new Error('Failed to fetch tokens');
       return response.data;
     },
+    initialData,
   });
 }
 
@@ -118,56 +120,6 @@ export function useApplyMerchantMutation() {
     mutationFn: (input: ApplyMerchantRequest) => merchantRepository.applyMerchant(input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['merchantStatus'] });
-    },
-  });
-}
-
-// ============== Payment Request Usecases ==============
-export function usePaymentRequestsQuery(page = 1, limit = 10) {
-  return useQuery({
-    queryKey: ['paymentRequests', page, limit],
-    queryFn: async () => {
-      const response = await paymentRequestRepository.listPaymentRequests(page, limit);
-      if (response.error) throw new Error(response.error);
-      if (!response.data) throw new Error('Failed to fetch payment requests');
-      return response.data;
-    },
-  });
-}
-
-export function usePaymentRequestQuery(id: string) {
-  return useQuery({
-    queryKey: ['paymentRequest', id],
-    queryFn: async () => {
-      const response = await paymentRequestRepository.getPaymentRequest(id);
-      if (response.error) throw new Error(response.error);
-      if (!response.data) throw new Error('Failed to fetch payment request');
-      return response.data;
-    },
-    enabled: !!id,
-  });
-}
-
-export function usePublicPaymentRequestQuery(id: string) {
-  return useQuery({
-    queryKey: ['publicPaymentRequest', id],
-    queryFn: async () => {
-      const response = await paymentRequestRepository.getPublicPaymentRequest(id);
-      if (response.error) throw new Error(response.error);
-      if (!response.data) throw new Error('Failed to fetch payment request');
-      return response.data;
-    },
-    enabled: !!id,
-  });
-}
-
-export function useCreatePaymentRequestMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (input: CreatePaymentRequestRequest) => paymentRequestRepository.createPaymentRequest(input),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['paymentRequests'] });
     },
   });
 }

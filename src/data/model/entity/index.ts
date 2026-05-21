@@ -166,23 +166,6 @@ export interface WebhookLog {
   updatedAt: string;
 }
 
-// Payment request entity
-export interface PaymentRequest {
-  id: string;
-  merchantId: string;
-  walletId: string;
-  chainId: string;
-  tokenAddress: string;
-  amount: string;
-  decimals: number;
-  description?: string;
-  status: 'PENDING' | 'COMPLETED' | 'EXPIRED' | 'CANCELLED';
-  expiresAt: string;
-  txHash?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 // API Key entity
 export interface ApiKey {
   id: string;
